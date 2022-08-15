@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'package:flutter_auth/components/top_right_menu.dart';
 import 'package:get/get.dart';
+import 'package:odoo_rpc/odoo_rpc.dart';
 
 import '../../constants.dart';
+import '../../controllers.dart';
+import '../../shared_prefs.dart';
 import '../Home/widgets/search_bar.dart';
 import '../header.dart';
+final Controller c = Get.find();
 
 class Partner extends StatelessWidget {
   
@@ -37,7 +41,7 @@ class PartnerScreen extends StatelessWidget {
       body: Stack(
         children: <Widget>[
           Header(size: size),
-          Body(title: "Partner\n$type")
+          Body(title: "Partner", subtitle: type, type: type)
         ],
       ),
     );
@@ -46,53 +50,122 @@ class PartnerScreen extends StatelessWidget {
 
 
 class Body extends StatelessWidget {
-  const Body({
+  Body({
     Key? key,
+    required this.type,
     required this.title,
+    required this.subtitle,
   }) : super(key: key);
 
+  final String? type;
   final String? title;
+  final String? subtitle;
 
+  OdooSession? session ;
+  OdooClient? client ;
+
+
+  getPartners(context, type) async {
+    final prefs = SharedPref();
+    final sobj = await prefs.readObject('session');
+    session = OdooSession.fromJson(sobj);
+    client = OdooClient(c.baseUrl.toString(), session);
+    var domain;
+    if (type=='customer')
+      domain = ['customer','=',true];
+    else
+      domain = ['supplier','=',true];
+    try {
+      return await client?.callKw({
+        'model': 'res.partner',
+        'method': 'search_read',
+        'args': [],
+        'kwargs': {
+          'domain': [
+            domain
+          ],
+        },
+      });
+
+    } catch (e) { 
+      client?.close();
+      showDialog(context: context, builder: (context) {
+        return SimpleDialog(
+            children: <Widget>[
+                  Center(child: Text(e.toString()))
+            ]);
+      });
+    }
+    
+  }
+  
   @override
   Widget build(BuildContext context) {
-  //   final List<Map> menus = [
-  //   {'name':'RFQ', 'route':'/Partner/draft', 'icon': Icons.public, 'iconColor': Colors.red[300]},
-  //   {'name':'Purchase Order','route':'/Partner/confirmed',  'icon': Icons.shopping_basket, 'iconColor': Colors.orange[300]},
-  //   {'name':'Vendors', 'route':'/vendors', 'icon': Icons.account_balance, 'iconColor': Colors.purple[300]},
-  //   {'name':'Receiving','route':'/receiving',  'icon': Icons.warehouse, 'iconColor': Colors.blue[300]},
-  //   {'name':'Bills','route':'/bills',  'icon': Icons.money, 'iconColor': Colors.green[300]},
-  // ];
+
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            Align(
-              alignment: Alignment.topRight,
-              child: Container(
-                alignment: Alignment.center,
-                height: 52,
-                width: 52,
-                decoration: const BoxDecoration(
-                  color: kTextColor,
-                  shape: BoxShape.circle,
-                ),
-                child: SvgPicture.asset("assets/icons/menu.svg"),
-              ),
-            ),
+            TopRightMenu(),
             Text(
               title??'',
+              style:TextStyle(fontSize: 25, fontWeight: FontWeight.w100, color: Colors.white),
+            ),
+            Text(
+              "$subtitle".toUpperCase(),
               style:TextStyle(fontSize: 25, fontWeight: FontWeight.w900, color: Colors.white),
             ),
             const SearchBar(),
-            // Expanded(
-            //   child: GridMenu(menus: menus),
-            // ),
+            FutureBuilder(
+              future: getPartners(context, type),
+              builder: (context, AsyncSnapshot<dynamic>  orderSnapshot) {
+                if (orderSnapshot.hasData) {
+                  // print(orderSnapshot.data[0].toString());
+                  if (orderSnapshot.data!=null) {
+                    return Expanded(
+                      child: ListView.builder(
+                        itemCount: orderSnapshot.data.length,
+                        itemBuilder: (BuildContext context, int index) {
+                          // SaleOrderModel saleOrder = orderSnapshot.data[index];
+                          final record = orderSnapshot.data[index] as Map<String, dynamic>;
+                          return buildListItem(record);
+                        }),
+                    );
+                  } else {
+                    return CircularProgressIndicator();
+                  }
+                }
+                else{
+                  print('nodata');
+                  return Container();
+
+                }
+              }
+            )
           ],
         ),
       ),
     );
   }
+
+
+
+  Widget buildListItem(Map<String, dynamic> record) {
+    var unique = record['__last_update'] as String;
+    unique = unique.replaceAll(RegExp(r'[^0-9]'), '');
+
+    // print(record.toString());
+    final avatarUrl ='${client?.baseURL}/web/image?model=res.partner&field=image&id=${record["id"]}&unique=$unique';
+    var city = record['city'];
+    // print(city);
+    return ListTile(
+      leading: CircleAvatar(backgroundImage: NetworkImage(avatarUrl)),
+      title: Text(record['name']),
+      subtitle: Text(city==false?'':city, style: TextStyle(fontWeight: FontWeight.bold),),
+    );
+  }
+
 }
 
