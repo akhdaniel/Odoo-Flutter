@@ -44,7 +44,7 @@ class SaleOrderScreen extends StatelessWidget {
       body: Stack(
         children: <Widget>[
           Header(size: size),
-          Body(title: "Sale Order:\n$state", states: states)
+          Body(title: "Sale Order", subtitle: state, states: states)
         ],
       ),
     );
@@ -56,10 +56,13 @@ class Body extends StatelessWidget {
   Body({
     Key? key,
     required this.title,
+    required this.subtitle,
     required this.states,
   }) : super(key: key);
 
+
   final String? title;
+  final String? subtitle;
   List states;
   List orders = [];
 
@@ -114,6 +117,10 @@ class Body extends StatelessWidget {
             TopRightMenu(),
             Text(
               title??'',
+              style:TextStyle(fontSize: 25, fontWeight: FontWeight.w100, color: Colors.white),
+            ),
+            Text(
+              "$subtitle".toUpperCase(),
               style:TextStyle(fontSize: 25, fontWeight: FontWeight.w900, color: Colors.white),
             ),
             const SearchBar(),
