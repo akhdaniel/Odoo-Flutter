@@ -1,13 +1,28 @@
 import 'package:flutter/material.dart';
-
 import '../../../components/already_have_an_account_acheck.dart';
 import '../../../constants.dart';
+import '../../../controllers.dart';
+import '../../Home/home.dart';
 import '../../Signup/signup_screen.dart';
+import 'package:get/get.dart';
+import 'package:odoo_rpc/odoo_rpc.dart';
+import '../../../shared_prefs.dart';
 
-class LoginForm extends StatelessWidget {
+class LoginForm extends StatefulWidget {
   const LoginForm({
     Key? key,
   }) : super(key: key);
+
+  @override
+  State<LoginForm> createState() => _LoginFormState();
+}
+
+class _LoginFormState extends State<LoginForm> {
+  // final formKey = GlobalKey<FormState>();
+  final _usernameController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final Controller c = Get.find();
+
 
   @override
   Widget build(BuildContext context) {
@@ -15,6 +30,7 @@ class LoginForm extends StatelessWidget {
       child: Column(
         children: [
           TextFormField(
+            controller: _usernameController,
             keyboardType: TextInputType.emailAddress,
             textInputAction: TextInputAction.next,
             cursorColor: kPrimaryColor,
@@ -30,6 +46,7 @@ class LoginForm extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(vertical: defaultPadding),
             child: TextFormField(
+              controller: _passwordController,
               textInputAction: TextInputAction.done,
               obscureText: true,
               cursorColor: kPrimaryColor,
@@ -46,7 +63,9 @@ class LoginForm extends StatelessWidget {
           Hero(
             tag: "login_btn",
             child: ElevatedButton(
-              onPressed: () {},
+              onPressed: () {
+                _doLogin();
+              },
               child: Text(
                 "Login".toUpperCase(),
               ),
@@ -69,4 +88,42 @@ class LoginForm extends StatelessWidget {
       ),
     );
   }
+
+
+
+  _doLogin() async {
+    const baseUrl='https://pos.vitraining.com';
+    const db='pos.vitraining.com';
+    final client = OdooClient(baseUrl);
+    try {
+      final session = await client.authenticate(db, _usernameController.text, _passwordController.text);
+      final prefs = SharedPref();
+      prefs.saveObject('session', session); 
+      prefs.saveString('baseUrl', baseUrl);
+      prefs.saveString('db', db);
+      c.setCurrentUser(session.userName);
+      c.setDb(db);
+      c.setBaseUrl(baseUrl);
+      c.loggedIn();
+      Get.to(Home());
+
+    } on OdooException catch (e) {
+      client.close();
+      showDialog(context: context, builder: (context) {
+        return SimpleDialog(
+            children: <Widget>[
+                  Center(child: Text(e.toString()))
+            ]);
+      });
+    }
+    client.close();
+  }
+
+  // _doLogin(){
+  //   c.loggedIn();
+  //   c.setCurrentUser({'username': _usernameController.text});
+
+  //   Get.to(Home());
+
+  // }
 }
