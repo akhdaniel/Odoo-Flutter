@@ -130,6 +130,7 @@ class Body extends StatelessWidget {
                         itemBuilder: (BuildContext context, int index) {
                           // SaleOrderModel saleOrder = orderSnapshot.data[index];
                           final record = orderSnapshot.data[index] as Map<String, dynamic>;
+                          // print(record);
                           return buildListItem(record);
                         }),
                     );
@@ -159,11 +160,19 @@ class Body extends StatelessWidget {
     // print(record.toString());
     final avatarUrl ='${client?.baseURL}/web/image?model=res.partner&field=image&id=${record["id"]}&unique=$unique';
     var city = record['city'];
+    var phone = record['phone'];
     // print(city);
-    return ListTile(
-      leading: CircleAvatar(backgroundImage: NetworkImage(avatarUrl)),
-      title: Text(record['name']),
-      subtitle: Text(city==false?'':city, style: TextStyle(fontWeight: FontWeight.bold),),
+    return Card(
+      child: ListTile(
+        onTap: () {
+          // print(record['name']);
+          Get.toNamed( '/partnerView/${record['id']}' );
+        },
+        leading: CircleAvatar(backgroundImage: NetworkImage(avatarUrl)),
+        title: Text(record['name']),
+        trailing: Text(phone==false?'':phone),
+        subtitle: Text(city==false?'':city, style: TextStyle(fontWeight: FontWeight.bold),),
+      ),
     );
   }
 

@@ -7,11 +7,13 @@ class Controller extends GetxController{
   var baseUrl = ''.obs;
   var db = ''.obs;
   var isLoggedIn = false.obs;
+  var objectName = ''.obs;
 
   // setCurrentSession(session)=>currentSession(session);
   setCurrentUser(username)=>currentUser(username);
   setDb(newDb)=>db(newDb);
   setBaseUrl(newBaseUrl)=>baseUrl(newBaseUrl);
+  setObjectName(name)=>objectName(name);
 
   loggedIn()=>isLoggedIn(true);
   loggedOut()=>isLoggedIn(false);

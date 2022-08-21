@@ -3,7 +3,9 @@ import 'package:flutter_auth/Screens/Inventory/location.dart';
 import 'package:flutter_auth/Screens/Inventory/picking.dart';
 import 'package:flutter_auth/Screens/Inventory/warehouse.dart';
 import 'package:flutter_auth/Screens/Partner/partner.dart';
+import 'package:flutter_auth/Screens/Partner/partner_view.dart';
 import 'package:flutter_auth/Screens/Sales/sale_home.dart';
+import 'package:flutter_auth/Screens/Sales/sale_order_view.dart';
 import 'package:flutter_auth/Screens/Welcome/welcome_screen.dart';
 import 'package:flutter_auth/constants.dart';
 import 'package:get/get.dart';
@@ -60,7 +62,9 @@ class MyApp extends StatelessWidget {
         GetPage(name: '/inventoryHome', page: () => const InventoryHome()),
         GetPage(name: '/purchaseOrder/:state', page: () => const PurchaseOrder()),
         GetPage(name: '/saleOrder/:state', page: () => const SaleOrder()),
+        GetPage(name: '/saleOrderView/:name', page: () => const SaleOrderView()),
         GetPage(name: '/partner/:type', page: () => const Partner()),
+        GetPage(name: '/partnerView/:id', page: () => const PartnerView()),
         GetPage(name: '/picking/:type', page: () => const Picking()),
         GetPage(name: '/warehouse', page: () => const Warehouse()),
         GetPage(name: '/location', page: () => const Location()),

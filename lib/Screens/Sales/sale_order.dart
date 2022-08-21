@@ -175,21 +175,27 @@ class Body extends StatelessWidget {
         stateColor = Colors.red;
         break;
     }
-    return ListTile(
-      leading: CircleAvatar(backgroundImage: NetworkImage(avatarUrl)),
-      title: Text(record['name']),
-      trailing: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(3),
-            decoration: BoxDecoration( borderRadius: BorderRadius.circular(10), color: stateColor),
-            child: Text(record['state'].toUpperCase(), style: TextStyle(fontSize: 9, color: Colors.white, ),)),
-          Text(record['currency_id'][1] + ' ' + record['amount_total'].toString() ),
-        ],
+    return Card(
+      child: ListTile(
+        onTap: () {
+          Get.toNamed( '/saleOrderView/${record['name']}' );
+        },
+        leading: CircleAvatar(backgroundImage: NetworkImage(avatarUrl)),
+        title: Text(record['name']),
+        trailing: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(3),
+              decoration: BoxDecoration( borderRadius: BorderRadius.circular(10), color: stateColor),
+              child: Text(record['state'].toUpperCase(), style: TextStyle(fontSize: 9, color: Colors.white, ),)
+            ),
+            Text(record['currency_id'][1] + ' ' + record['amount_total'].toString() ),
+          ],
+        ),
+        subtitle: Text(record['partner_id'][1], style: TextStyle(fontWeight: FontWeight.bold),),
       ),
-      subtitle: Text(record['partner_id'][1], style: TextStyle(fontWeight: FontWeight.bold),),
     );
   }
 
