@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_typeahead/flutter_typeahead.dart';
+import 'package:intl/intl.dart';
 
 import 'data.dart';
 
@@ -14,6 +15,7 @@ class Many2OneField extends StatelessWidget {
     required this.label,
     required this.icon,
     required this.onSelect,
+    // required this.subTitleField,
   }) : super(key: key);
 
   final TextEditingController controller;
@@ -23,6 +25,7 @@ class Many2OneField extends StatelessWidget {
   final IconData icon;
   final List value;
   final Function onSelect;
+  // final String subTitleField;
 
   @override
   Widget build(BuildContext context) {
@@ -40,10 +43,11 @@ class Many2OneField extends StatelessWidget {
         return await BackendService.getMasterData(object,pattern);
       },
       itemBuilder: (context, Map<String, String> master) {
+        // var subtitle = master[subTitleField];
         return ListTile(
           // leading: Icon(Icons.air_sharp),
           title: Text(master['name']!),
-          subtitle: Text('${master['id']}'),
+          // subtitle: (subTitleField=='' ? const Text(''): Text(subtitle??'')),
         );
       },
       onSuggestionSelected: (Map<String, String> master) {
@@ -76,6 +80,51 @@ class AmountField extends StatelessWidget {
         // hintText: hint,  
         labelText: 'Total',  
       ),   
+    );
+  }
+}
+
+
+class DateField extends StatelessWidget {
+  DateField({
+    Key? key,
+    required this.initialValue,
+    required this.controller,
+    required this.onSelect,
+  }) : super(key: key);
+
+  String initialValue;
+  TextEditingController controller;
+  Function onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    controller.text = initialValue;
+
+    return TextFormField(  
+      readOnly: true,
+      controller: controller,
+      decoration: const InputDecoration(  
+        icon:  Icon(Icons.calendar_today),  
+        hintText: 'Enter date order',  
+        labelText: 'Order Date',  
+      ),
+      onTap: () async {
+        DateTime? pickedDate = await showDatePicker(
+            context: context,
+            initialDate: DateTime.parse(initialValue),
+            firstDate: DateTime(1950),
+            lastDate: DateTime(2100)
+        );
+
+        if (pickedDate != null) {
+          String formattedDate = DateFormat('yyyy-MM-dd hh:mm:ss').format(pickedDate);
+          controller.text = formattedDate;
+          onSelect(formattedDate);
+        } else {
+          print('cancel date select');
+        }
+      },
     );
   }
 }

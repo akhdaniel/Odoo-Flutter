@@ -22,6 +22,7 @@ class SaleOrderModel {
 
 
   static fromJson(record){
+    print('load from json');
     return SaleOrderModel(
       id: record['id'], 
       name: record['name'], 
@@ -36,26 +37,21 @@ class SaleOrderModel {
 
   @override
   String toString() {
-    return "{'id': $id, 'name':'$name', 'partnerId':$partnerId, 'paymentTermId':$paymentTermId, 'orderDate':'$orderDate', 'amountTotal':$amountTotal, 'state':$state, 'orderLines':$orderLines}";
+    return "{'id': $id, 'name':'$name', 'partnerId':$partnerId, 'paymentTermId':$paymentTermId, 'orderDate':'$orderDate', 'amountTotal':$amountTotal, 'state':'$state', 'orderLines':$orderLines}";
   }
 
-  void setPartnerId(value ){
-    partnerId = value ;
-  }
-  void setPaymentTermId(value ){
-    paymentTermId = value ;
-  }
+  toJson() {
+    return {
+      'id': id, 
+      'name':name, 
+      'partnerId':partnerId, 
+      'paymentTermId':paymentTermId, 
+      'orderDate':orderDate, 
+      'amountTotal': amountTotal, 
+      'state':state, 
+      'orderLines':orderLines
+    };
 
-  void saveSaleOrder(){
-    print(this.toString());
-    print(paymentTermId);
-    print(partnerId);
-  }
-  void editSaleOrder(){
-    print('edit');
-  }
-  void confirmSaleOrder(){
-    print('confirm');
   }  
 }
 

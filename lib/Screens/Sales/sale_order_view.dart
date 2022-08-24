@@ -1,6 +1,7 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:intl/intl.dart';
 import 'package:odoo_rpc/odoo_rpc.dart';
 
 import '../../components/fields.dart';
@@ -16,9 +17,9 @@ final Controller c = Get.find();
 final TextEditingController _partnerIdController = TextEditingController();
 final TextEditingController _paymentTermIdController = TextEditingController();
 final TextEditingController _dateOrderController = TextEditingController();
-
-
-SaleOrderModel saleOrder = SaleOrderModel(id: 0, name: '', partnerId: 0, paymentTermId: 0, orderDate: '', amountTotal: 0);
+  
+OdooSession? session ;
+OdooClient? client ;
 
 
 class SaleOrderView extends StatelessWidget {
@@ -27,8 +28,13 @@ class SaleOrderView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    c.loading(false);
+    print(c.isLoading);
     var size = MediaQuery.of(context).size*0.5; //this gonna give us total height and with of our device
     var name = Get.parameters['name'] ?? '0';
+
+    SaleOrderModel saleOrder = SaleOrderModel(id: 0, name: '', partnerId: 0, paymentTermId: 0, orderDate: '', amountTotal: 0, state:'', orderLines: []);
+    c.saveSaleOrder(saleOrder.toJson());
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
@@ -40,18 +46,81 @@ class SaleOrderView extends StatelessWidget {
       ),
       home: Scaffold(
         bottomNavigationBar: ObjectBottomNavBar(
-          onEdit: saleOrder.editSaleOrder,
-          onSave: saleOrder.saveSaleOrder, 
-          onConfirm: saleOrder.confirmSaleOrder,
+          onEdit: editSaleOrder,
+          onSave: () { saveSaleOrder(context); }, 
+          onConfirm: confirmSaleOrder,
         ),
-        body: Stack(
+        body:  Stack(
           children: <Widget>[
             Header(size: size),
-            Body(title: "Sale Order", name: name)
+            c.isLoading.isTrue ? Center(child: CircularProgressIndicator()) : 
+              Body(title: "Sale Order", name: name)
           ],
         ),
       ),
     );
+  }
+
+  saveSaleOrder(context) async {
+    // print('save');
+    var saleOrder = c.saleOrder;
+    // print(saleOrder);
+
+    final prefs = SharedPref();
+    final sobj = await prefs.readObject('session');
+    session = OdooSession.fromJson(sobj);
+    client = OdooClient(c.baseUrl.toString(), session);
+    
+    c.loading(true);
+
+    try {
+      print('rpc');
+      // print(c.isLoading);
+      // print(c.isLoading);
+      var response = await client?.callKw({
+        'model': 'sale.order',
+        'method': 'write',
+        'args': [
+          [saleOrder['id']],
+          {
+            'name': saleOrder['name'],
+            'date_order': saleOrder['orderDate'],
+            'partner_id': saleOrder['partnerId'],
+            'payment_term_id': saleOrder['paymentTermId'],
+          }
+        ],
+        'kwargs': {},
+      });
+      print(c.isLoading);
+      print(response);
+      if(response!=null) {
+        c.loading(false) ;
+        showDialog(context: context, builder: (context) {
+          return SimpleDialog(
+              children: <Widget>[
+                    Center(child: Text("Successfull save"))
+              ]);
+        });
+      }
+    } catch (e) { 
+      client?.close();
+      c.loading(false) ;
+      showDialog(context: context, builder: (context) {
+        return SimpleDialog(
+            children: <Widget>[
+                  Center(child: Text("Erro save ${e.toString()}"))
+            ]);
+      });
+    }
+  }
+
+  void editSaleOrder(){
+    print('edit');
+    print(c.saleOrder);
+  }
+  void confirmSaleOrder(){
+    print('confirm');
+    print(c.saleOrder);
   }
 
 
@@ -70,12 +139,13 @@ class Body extends StatelessWidget {
   final String? name;
 
 
-  OdooSession? session ;
-  OdooClient? client ;
+
   
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
+    
+    return c.isLoading==true ? Center(child: const CircularProgressIndicator()) : 
+      SafeArea(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20),
         child: Column(
@@ -105,18 +175,20 @@ class Body extends StatelessWidget {
                         itemCount: orderSnapshot.data.length,
                         itemBuilder: (BuildContext context, int index) {
                           final record = orderSnapshot.data[index] as Map<String, dynamic>;
-                          saleOrder = SaleOrderModel.fromJson(record);
-                          print(saleOrder.toString());
+                          var saleOrder = SaleOrderModel.fromJson(record);
+                          c.saveSaleOrder(saleOrder.toJson());
+                          // print(c.saleOrder);
+                          // _dateOrderController.text = saleOrder.orderDate;
                           return buildForm(context, record);
                         }),
                     );
 
                   } else {
-                    return CircularProgressIndicator();
+                    return Center(child: CircularProgressIndicator());
                   }
                 }
                 else{
-                  return Text("No data..");
+                    return Center(child: CircularProgressIndicator());
                 }
               }
             )
@@ -130,6 +202,7 @@ class Body extends StatelessWidget {
     final sobj = await prefs.readObject('session');
     session = OdooSession.fromJson(sobj);
     client = OdooClient(c.baseUrl.toString(), session);
+
     try {
       return await client?.callKw({
         'model': 'sale.order',
@@ -184,21 +257,10 @@ class Body extends StatelessWidget {
   buildForm(context, record){
 
     var lines = record['order_line'];
-    var stateColor = Colors.orange;
-    switch (record['state']) {
-      case 'draft':
-        stateColor = Colors.blue;
-        break;
-      case 'sent':
-        stateColor = Colors.purple;
-        break;
-      case 'order':
-        stateColor = Colors.green;
-        break;
-      case 'cancel':
-        stateColor = Colors.red;
-        break;
-    }
+    var stateColor = getStateColor(record);
+    var saleOrder = c.saleOrder;
+
+
     return Column(
       children: [
         Card(
@@ -232,35 +294,17 @@ class Body extends StatelessWidget {
                           icon: Icons.person,
                           controller: _partnerIdController,
                           onSelect: (master) {
-                            saleOrder.partnerId = int.parse(master['id']);
+                            saleOrder['partnerId'] = int.parse(master['id']);
                             _partnerIdController.text = master['name'];
                             },
                         ),
                        
-                        TextFormField(  
+                        DateField(
                           initialValue: record['date_order'],
-                          readOnly: true,
-                          decoration: const InputDecoration(  
-                            icon:  Icon(Icons.calendar_today),  
-                            hintText: 'Enter date order',  
-                            labelText: 'Order Date',  
-                          ),  
-                          onTap: () async {
-                            DateTime? pickedDate = await showDatePicker(
-                                context: context,
-                                initialDate: DateTime.now(),
-                                firstDate: DateTime(1950),
-                                //DateTime.now() - not to allow to choose before today.
-                                lastDate: DateTime(2100));
-
-                                if (pickedDate != null) {
-                                  print(pickedDate); //pickedDate output format => 2021-03-10 00:00:00.000
-                                  String formattedDate = DateFormat('yyyy-MM-dd hh:mm:ss').format(pickedDate);
-                                  print(formattedDate); //formatted date output using intl package =>  2021-03-16
-                                  // setState(() {
-                                  //   dateInput.text =formattedDate; //set output date to TextField value.
-                                  // });
-                                } else {}
+                          controller: _dateOrderController,
+                          onSelect: (date) {
+                            saleOrder['orderDate'] = date;
+                            print(saleOrder.toString());
                           },
                         ),
                         
@@ -272,16 +316,14 @@ class Body extends StatelessWidget {
                           icon: Icons.abc,
                           controller: _paymentTermIdController,
                           onSelect: (master) {
-                            print(saleOrder.toString());
-                            saleOrder.paymentTermId = int.parse(master['id']);
-                            print(saleOrder.toString());
+                            saleOrder['paymentTermId'] = int.parse(master['id']);
                             _paymentTermIdController.text = master['name'];
                           },
                         ),
                         
                         AmountField(
                           currency_id: record['currency_id'], 
-                          value: record['amount_total'], 
+                          value: (record['amount_total'] != null) ? record['amount_total'] : 0, 
                           hint:'Enter amount total'
                         )
                       ],
@@ -315,11 +357,11 @@ class Body extends StatelessWidget {
                           }),
                       );
                     } else {
-                      return const CircularProgressIndicator();
+                      return Center(child: CircularProgressIndicator());
                     }
                   }
                   else{
-                    return Container(child: Text('no data'),);
+                    return Center(child: CircularProgressIndicator());
                   }
                 },
               ),
@@ -330,6 +372,25 @@ class Body extends StatelessWidget {
         
         ]
     );
+  }
+
+  MaterialColor getStateColor(record) {
+    var stateColor = Colors.orange;
+    switch (record['state']) {
+      case 'draft':
+        stateColor = Colors.blue;
+        break;
+      case 'sent':
+        stateColor = Colors.purple;
+        break;
+      case 'order':
+        stateColor = Colors.green;
+        break;
+      case 'cancel':
+        stateColor = Colors.red;
+        break;
+    }
+    return stateColor;
   }
 
   Widget buildListItem(Map<String, dynamic> record) {
@@ -359,3 +420,4 @@ class Body extends StatelessWidget {
 
 
 }
+
