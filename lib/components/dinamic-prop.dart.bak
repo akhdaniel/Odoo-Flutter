@@ -1,0 +1,30 @@
+import 'dart:json' as json;
+
+main() {
+    var t = new Thingy();
+    t.add('bob', 'blah');
+    t.add('jim', 42);
+    print(t.bob());
+    print(t.jim());
+    print(json.stringify(t));
+}
+
+class Thingy {
+    final Map<Symbol, String> _keys = new Map<Symbol, String>();
+    final Map<Symbol, dynamic> _values = new Map<Symbol, dynamic>();
+
+    add(String key, dynamic value) {
+        _keys[new Symbol(key)] = key;
+        _values[new Symbol(key)] = value;
+    }
+
+    noSuchMethod(Invocation invocation) {
+        return _values[invocation.memberName];
+    }
+
+    toJson() {
+        var map = new Map<String, dynamic>();
+        _keys.forEach((symbol, name) => map[name] = _values[symbol]);
+        return map;
+    }
+}

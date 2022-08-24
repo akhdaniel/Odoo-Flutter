@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:odoo_rpc/odoo_rpc.dart';
 
-import '../../components/top_right_menu.dart';
+// import '../../components/top_right_menu.dart';
 import '../../constants.dart';
 import '../../controllers.dart';
 import '../../shared_prefs.dart';
@@ -40,6 +40,14 @@ class SaleOrderScreen extends StatelessWidget {
     var states = state=='draft'?['draft','sent']:['sale','done','cancel'];
 
     return Scaffold(
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Get.toNamed('/saleOrderView/new');
+        },
+        backgroundColor: kPrimaryColor,
+        child: const Icon(Icons.add),
+      ),
+      // floatingActionButtonLocation: FloatingActionButtonLocation.endTop,
       body: Stack(
         children: <Widget>[
           Header(size: size),
@@ -113,7 +121,7 @@ class Body extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            TopRightMenu(),
+            // TopRightMenu(),
             Text(
               title??'',
               style:TextStyle(fontSize: 25, fontWeight: FontWeight.w100, color: Colors.white),
@@ -176,6 +184,9 @@ class Body extends StatelessWidget {
         break;
     }
     return Card(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(15.0),
+      ),
       child: ListTile(
         onTap: () {
           Get.toNamed( '/saleOrderView/${record['name']}' );

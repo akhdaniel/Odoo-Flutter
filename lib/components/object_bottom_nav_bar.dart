@@ -7,7 +7,14 @@ import '../../../constants.dart';
 class ObjectBottomNavBar extends StatelessWidget {
   const ObjectBottomNavBar({
     Key? key,
+    required this.onSave,
+    required this.onEdit,
+    required this.onConfirm,
   }) : super(key: key);
+
+  final VoidCallback onSave;
+  final VoidCallback onEdit;
+  final VoidCallback onConfirm;
 
   @override
   Widget build(BuildContext context) {
@@ -22,19 +29,17 @@ class ObjectBottomNavBar extends StatelessWidget {
             title: "Edit",
             svgScr: "assets/icons/edit-svgrepo-com.svg",
             isActive: true,
-            press: ()=>{ print('edit')},
+            press: onEdit,
           ),
           BottomNavItem(
             title: "Save",
             svgScr: "assets/icons/save-svgrepo-com.svg",
-            press: ()=>{print('save')},
+            press: onSave,
           ),
           BottomNavItem(
             title: "Confirm",
             svgScr: "assets/icons/check-svgrepo-com.svg",
-            press: () {
-              print('confirm');
-            },
+            press: onConfirm,
           ),
         ],
       ),

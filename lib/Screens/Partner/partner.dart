@@ -163,6 +163,9 @@ class Body extends StatelessWidget {
     var phone = record['phone'];
     // print(city);
     return Card(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(15.0),
+      ),
       child: ListTile(
         onTap: () {
           // print(record['name']);

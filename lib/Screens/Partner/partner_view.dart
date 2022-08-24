@@ -1,3 +1,5 @@
+import 'dart:ffi';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:odoo_rpc/odoo_rpc.dart';
@@ -28,10 +30,14 @@ class PartnerView extends StatelessWidget {
         textTheme: Theme.of(context).textTheme.apply(displayColor: kTextColor),
       ),
       home: Scaffold(
-        bottomNavigationBar: const ObjectBottomNavBar(),        
+        bottomNavigationBar: ObjectBottomNavBar(
+          onConfirm: () => {},
+          onSave: () => {},
+          onEdit: () => {},
+        ),        
       body: Stack(
         children: <Widget>[
-          Header(size: size),
+          // Header(size: size),
           Body(title: "Partner", id: id)
         ],
       ),
@@ -116,49 +122,88 @@ class Body extends StatelessWidget {
   
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            TopRightMenu(),
-            Text(
-              title??'',
-              style:TextStyle(fontSize: 25, fontWeight: FontWeight.w100, color: Colors.white),
-            ),
-            Text(
-              id.toString(),
-              style:TextStyle(fontSize: 25, fontWeight: FontWeight.w900, color: Colors.white),
-            ),
-            // const SearchBar(),
-            FutureBuilder(
-              future: getPartner(context, id),
-              builder: (context, AsyncSnapshot<dynamic>  orderSnapshot) {
-                if (orderSnapshot.hasData) {
-                  if (orderSnapshot.data!=null) {
-                    
-                    return Expanded(
-                      child: ListView.builder(
-                        itemCount: orderSnapshot.data.length,
-                        itemBuilder: (BuildContext context, int index) {
-                          final record = orderSnapshot.data[index] as Map<String, dynamic>;
-                          return buildForm(context, record);
-                        }),
-                    );
+    // final top = coverHeight  - profileHight;
+    return FutureBuilder(
+      future: getPartner(context, id),
+      builder: (context, AsyncSnapshot<dynamic>  orderSnapshot) {
+        if (orderSnapshot.hasData) {
+          if (orderSnapshot.data!=null) {
+            final record = orderSnapshot.data[0] as Map<String, dynamic>;
+            final partnerImageUrl ='${client?.baseURL}/web/image?model=res.partner&field=image&id=${record["id"]}&unique=';
+            var street = record['street'] is String ? record['street'] : '';
+            street = street + (record['street2'] is String ? ', '+ record['street2'] : '');
 
-                  } else {
-                    return CircularProgressIndicator();
-                  }
-                }
-                else{
-                  return Container(child: Text("No data.."),);
-                }
-              }
-            )
-          ],
-        ),
-    ));
+            var cityCountry = record['city'] is String ? record['city'] : '';
+            cityCountry = cityCountry + (record["country_id"] is List ? ', '+record["country_id"][1]:'');
+            cityCountry = cityCountry + (record['zip'] is String? ', ' +record['zip'] : '');
+            
+            var size = MediaQuery.of(context).size*0.5; //this gonna give us total height and with of our device
+            
+            return Stack(
+              
+              clipBehavior: Clip.none,
+              alignment: AlignmentDirectional.topCenter,
+              children: [
+                // const TopRightMenu(),
+                Header(size: size),
+                Positioned(
+                  top: 80,
+                  child: CircleAvatar(
+                    radius: 80,
+                    backgroundColor: Colors.grey.shade800,
+                    backgroundImage: NetworkImage(partnerImageUrl)
+                  ),
+                ),
+                Positioned(
+                  top:250,
+                  child: Column(
+                    // crossAxisAlignment: CrossAxisAlignment.stretch,
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      Text(record["name"], style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),),
+                      Text(street, style: TextStyle(fontSize: 20),),
+                      Text(cityCountry, style: TextStyle(fontSize: 20),),
+                    ],
+                  ),
+                ),
+                Positioned(
+                  top:340,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      MediaIcon(icon: Icons.phone, text: record['mobile'] is String? record['mobile'] : ''),
+                      const SizedBox(width: 10,),
+                      MediaIcon(icon: Icons.email, text: record['email'] is String? record['email'] : ''),
+                    ],
+                  )
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(top:400),
+                  child: GridView.count(
+                    padding: EdgeInsets.all(20),
+                    crossAxisCount: 3,
+                    children: [
+                      StatInfo(title:"SO", qty:9, amount:12000.0),
+                      StatInfo(title:"PO", qty:29, amount:140000),
+                      StatInfo(title:"DO", qty:49, amount:110000),
+                      StatInfo(title:"Receiving", qty:19, amount:220000),
+                      StatInfo(title:"Invoice", qty:12, amount:220000),
+                      StatInfo(title:"Bill", qty:14, amount:120000),
+                    ],
+                  ),
+                )
+              ],
+            );
+
+          } else {
+            return CircularProgressIndicator();
+          }
+        }
+        else{
+          return Container(child: Text("No data.."),);
+        }
+      }
+    );
   }
 
   buildForm(context, record){
@@ -356,4 +401,62 @@ class Body extends StatelessWidget {
     );
   }
 
+}
+
+class StatInfo extends StatelessWidget {
+  const StatInfo({
+    Key? key,
+    required this.title,
+    required this.qty,
+    required this.amount,
+  }) : super(key: key);
+
+  final String title;
+  final int qty;
+  final double amount;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      shadowColor: Colors.grey,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(15.0),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Text(qty.toString(), style: TextStyle(fontWeight: FontWeight.bold),),
+          Text(amount.toString(), style: TextStyle(fontWeight: FontWeight.bold),),
+          Text(title, style: TextStyle(fontWeight: FontWeight.normal),),
+        ],
+      ),
+    );
+  }
+}
+
+class MediaIcon extends StatelessWidget {
+  const MediaIcon({
+    Key? key,
+    required this.text,
+    required this.icon,
+  }) : super(key: key);
+
+  final String text;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        CircleAvatar(
+          backgroundColor: kPrimaryColor,
+          foregroundColor: Colors.white,
+          radius: 25,
+          child: Center(child: Icon(icon, size: 32),),
+        ),
+        // Text(text)
+      ],
+    );
+  }
 }

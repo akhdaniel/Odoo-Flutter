@@ -1,17 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 import 'package:odoo_rpc/odoo_rpc.dart';
 
+import '../../components/fields.dart';
 import '../../components/object_bottom_nav_bar.dart';
-import '../../components/top_right_menu.dart';
 import '../../constants.dart';
 import '../../controllers.dart';
+import '../../models/sale_order.dart';
 import '../../shared_prefs.dart';
 import '../header.dart';
+
 final Controller c = Get.find();
+
+final TextEditingController _partnerIdController = TextEditingController();
+final TextEditingController _paymentTermIdController = TextEditingController();
+final TextEditingController _dateOrderController = TextEditingController();
+
+
+SaleOrderModel saleOrder = SaleOrderModel(id: 0, name: '', partnerId: 0, paymentTermId: 0, orderDate: '', amountTotal: 0);
+
 
 class SaleOrderView extends StatelessWidget {
   const SaleOrderView({Key? key}) : super(key: key);
+
 
   @override
   Widget build(BuildContext context) {
@@ -27,19 +39,23 @@ class SaleOrderView extends StatelessWidget {
         textTheme: Theme.of(context).textTheme.apply(displayColor: kTextColor),
       ),
       home: Scaffold(
-        bottomNavigationBar: const ObjectBottomNavBar(),        
-      body: Stack(
-        children: <Widget>[
-          Header(size: size),
-          Body(title: "Sale Order", name: name)
-        ],
+        bottomNavigationBar: ObjectBottomNavBar(
+          onEdit: saleOrder.editSaleOrder,
+          onSave: saleOrder.saveSaleOrder, 
+          onConfirm: saleOrder.confirmSaleOrder,
+        ),
+        body: Stack(
+          children: <Widget>[
+            Header(size: size),
+            Body(title: "Sale Order", name: name)
+          ],
+        ),
       ),
-    ),
     );
   }
-  
-}
 
+
+}
 
 class Body extends StatelessWidget {
   Body({
@@ -49,13 +65,65 @@ class Body extends StatelessWidget {
   }) : super(key: key);
   final _formKey = GlobalKey<FormState>();  
 
-
   final String? title;
   String? subtitle ;
   final String? name;
 
+
   OdooSession? session ;
   OdooClient? client ;
+  
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            // TopRightMenu(),
+            Text(
+              title??'',
+              style:TextStyle(fontSize: 25, fontWeight: FontWeight.w100, color: Colors.white),
+            ),
+            Text(
+              name.toString(),
+              style:TextStyle(fontSize: 25, fontWeight: FontWeight.w900, color: Colors.white),
+            ),
+            name=='new'? 
+            buildForm(context, 
+              {'state':'draft','name':'','partner_id':[0,''],'date_order':'','payment_term_id':[0,''],'currency_id':[0,'']}
+            ) : 
+            FutureBuilder(
+              future: getOrder(context, name),
+              builder: (context, AsyncSnapshot<dynamic>  orderSnapshot) {
+                if (orderSnapshot.hasData) {
+                  if (orderSnapshot.data!=null) {
+                    
+                    return Expanded(
+                      child: ListView.builder(
+                        itemCount: orderSnapshot.data.length,
+                        itemBuilder: (BuildContext context, int index) {
+                          final record = orderSnapshot.data[index] as Map<String, dynamic>;
+                          saleOrder = SaleOrderModel.fromJson(record);
+                          print(saleOrder.toString());
+                          return buildForm(context, record);
+                        }),
+                    );
+
+                  } else {
+                    return CircularProgressIndicator();
+                  }
+                }
+                else{
+                  return Text("No data..");
+                }
+              }
+            )
+          ],
+        ),
+    ));
+  }
 
   getOrder(context, name) async {
     final prefs = SharedPref();
@@ -112,55 +180,9 @@ class Body extends StatelessWidget {
       });
     }
   }
-  
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            TopRightMenu(),
-            Text(
-              title??'',
-              style:TextStyle(fontSize: 25, fontWeight: FontWeight.w100, color: Colors.white),
-            ),
-            Text(
-              name.toString(),
-              style:TextStyle(fontSize: 25, fontWeight: FontWeight.w900, color: Colors.white),
-            ),
-            // const SearchBar(),
-            FutureBuilder(
-              future: getOrder(context, name),
-              builder: (context, AsyncSnapshot<dynamic>  orderSnapshot) {
-                if (orderSnapshot.hasData) {
-                  if (orderSnapshot.data!=null) {
-                    
-                    return Expanded(
-                      child: ListView.builder(
-                        itemCount: orderSnapshot.data.length,
-                        itemBuilder: (BuildContext context, int index) {
-                          final record = orderSnapshot.data[index] as Map<String, dynamic>;
-                          return buildForm(context, record);
-                        }),
-                    );
-
-                  } else {
-                    return CircularProgressIndicator();
-                  }
-                }
-                else{
-                  return Container(child: Text("No data.."),);
-                }
-              }
-            )
-          ],
-        ),
-    ));
-  }
 
   buildForm(context, record){
+
     var lines = record['order_line'];
     var stateColor = Colors.orange;
     switch (record['state']) {
@@ -180,6 +202,9 @@ class Body extends StatelessWidget {
     return Column(
       children: [
         Card(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8.0),
+          ),
           child: Stack(
             children: 
               [
@@ -192,75 +217,75 @@ class Body extends StatelessWidget {
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.all(10.0),
+                  padding: const EdgeInsets.all(14.0),
                   child: Form(  
                     key: _formKey,  
                     child: Column(  
                       crossAxisAlignment: CrossAxisAlignment.start,  
                       children: <Widget>[  
-                        TextFormField(  
-                          readOnly: true,
-                          initialValue: record['partner_id'][1],
-                          decoration: const InputDecoration(  
-                            icon: Icon(Icons.person),  
-                            hintText: 'Enter your customer name',  
-                            labelText: 'Customer',  
-                          ),  
-                          validator: (value) {  
-                            if (value!.isEmpty) {  
-                              return 'Please enter some text';  
-                            }  
-                            return null;  
-                          },  
-                        ),  
+
+                        Many2OneField(
+                          object: 'res.partner',
+                          value: record['partner_id'], 
+                          hint:'Select customer',
+                          label: 'Customer',
+                          icon: Icons.person,
+                          controller: _partnerIdController,
+                          onSelect: (master) {
+                            saleOrder.partnerId = int.parse(master['id']);
+                            _partnerIdController.text = master['name'];
+                            },
+                        ),
+                       
                         TextFormField(  
                           initialValue: record['date_order'],
                           readOnly: true,
                           decoration: const InputDecoration(  
-                            icon: const Icon(Icons.calendar_today),  
-                            hintText: 'Enter a phone number',  
+                            icon:  Icon(Icons.calendar_today),  
+                            hintText: 'Enter date order',  
                             labelText: 'Order Date',  
                           ),  
-                          validator: (value) {  
-                            if (value!.isEmpty) {  
-                              return 'Please enter valid date';  
-                            }  
-                            return null;  
-                          },  
-                        ),  
-                        TextFormField(  
-                          initialValue: record['payment_term_id'] is List ? record['payment_term_id'][1]:'',
-                          readOnly: true,                
-                          decoration: const InputDecoration(  
-                          icon: const Icon(Icons.abc),  
-                          hintText: 'Enter your payment terms',  
-                          labelText: 'Payment Terms',  
-                          ),  
-                          validator: (value) {  
-                            if (value!.isEmpty) {  
-                              return 'Please enter valid date';  
-                            }  
-                            return null;  
-                          },  
-                        ),  
-                        TextFormField(  
-                          initialValue: "${record['currency_id'][1]} ${record['amount_total']}",
-                          readOnly: true,
-                          decoration: const InputDecoration(  
-                            icon: Icon(Icons.money_rounded),  
-                            hintText: 'Enter your date of birth',  
-                            labelText: 'Total',  
-                          ),  
-                          validator: (value) {  
-                            if (value!.isEmpty) {  
-                              return 'Please enter valid date';  
-                            }  
-                            return null;  
-                          },  
-                        )
+                          onTap: () async {
+                            DateTime? pickedDate = await showDatePicker(
+                                context: context,
+                                initialDate: DateTime.now(),
+                                firstDate: DateTime(1950),
+                                //DateTime.now() - not to allow to choose before today.
+                                lastDate: DateTime(2100));
+
+                                if (pickedDate != null) {
+                                  print(pickedDate); //pickedDate output format => 2021-03-10 00:00:00.000
+                                  String formattedDate = DateFormat('yyyy-MM-dd hh:mm:ss').format(pickedDate);
+                                  print(formattedDate); //formatted date output using intl package =>  2021-03-16
+                                  // setState(() {
+                                  //   dateInput.text =formattedDate; //set output date to TextField value.
+                                  // });
+                                } else {}
+                          },
+                        ),
                         
-                      ],  
-                    ),  
+                        Many2OneField(
+                          object: 'account.payment.term',
+                          value: (record['payment_term_id'] is List) ? record['payment_term_id'] : [], 
+                          hint:'Select payment term',
+                          label: 'Payment Term',
+                          icon: Icons.abc,
+                          controller: _paymentTermIdController,
+                          onSelect: (master) {
+                            print(saleOrder.toString());
+                            saleOrder.paymentTermId = int.parse(master['id']);
+                            print(saleOrder.toString());
+                            _paymentTermIdController.text = master['name'];
+                          },
+                        ),
+                        
+                        AmountField(
+                          currency_id: record['currency_id'], 
+                          value: record['amount_total'], 
+                          hint:'Enter amount total'
+                        )
+                      ],
+                    ),
                   ),
                 ),
             ],
@@ -290,7 +315,7 @@ class Body extends StatelessWidget {
                           }),
                       );
                     } else {
-                      return Container(child:CircularProgressIndicator());
+                      return const CircularProgressIndicator();
                     }
                   }
                   else{
@@ -298,6 +323,7 @@ class Body extends StatelessWidget {
                   }
                 },
               ),
+              TextButton(onPressed: () {}, child: Text("Add new item"))
             ],
           ),
         ),
@@ -306,7 +332,6 @@ class Body extends StatelessWidget {
     );
   }
 
-
   Widget buildListItem(Map<String, dynamic> record) {
     var unique = record['__last_update'] as String;
     unique = unique.replaceAll(RegExp(r'[^0-9]'), '');
@@ -314,6 +339,9 @@ class Body extends StatelessWidget {
     final productUrl ='${client?.baseURL}/web/image?model=product.template&field=image&id=${record["product_id"][0]}&unique=$unique';
     
     return Card(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(15.0),
+      ),
       child: ListTile(
         leading: CircleAvatar(backgroundImage: NetworkImage(productUrl)),
         title: Text(record['name']),
@@ -328,5 +356,6 @@ class Body extends StatelessWidget {
       ),
     );
   }
+
 
 }
