@@ -89,8 +89,6 @@ class _LoginFormState extends State<LoginForm> {
     );
   }
 
-
-
   _doLogin() async {
     const baseUrl='https://pos.vitraining.com';
     const db='pos.vitraining.com';
@@ -119,11 +117,4 @@ class _LoginFormState extends State<LoginForm> {
     client.close();
   }
 
-  // _doLogin(){
-  //   c.loggedIn();
-  //   c.setCurrentUser({'username': _usernameController.text});
-
-  //   Get.to(Home());
-
-  // }
 }

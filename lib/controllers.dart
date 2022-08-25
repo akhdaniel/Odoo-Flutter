@@ -2,7 +2,6 @@ import 'package:get/get.dart';
 
 class Controller extends GetxController{
   var currentUser = ''.obs;
-  // var currentSession = {}.obs;
   var baseUrl = ''.obs;
   var db = ''.obs;
   var isLoggedIn = false.obs;
@@ -11,7 +10,6 @@ class Controller extends GetxController{
 
   RxMap saleOrder = {}.obs;
 
-  // setCurrentSession(session)=>currentSession(session);
   setCurrentUser(username)=>currentUser(username);
   setDb(newDb)=>db(newDb);
   setBaseUrl(newBaseUrl)=>baseUrl(newBaseUrl);
