@@ -71,7 +71,7 @@ class SaleOrderView extends StatelessWidget {
     session = OdooSession.fromJson(sobj);
     client = OdooClient(c.baseUrl.toString(), session);
     
-    c.loading(true);
+    c.isLoading.value = true;
 
     try {
       print('rpc');

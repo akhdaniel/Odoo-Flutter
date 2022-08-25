@@ -3,8 +3,11 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
 
 import '../../../constants.dart';
+import '../controllers.dart';
+final Controller c = Get.find();
 
-class ObjectBottomNavBar extends StatelessWidget {
+
+class ObjectBottomNavBar extends GetView<Controller> {
   const ObjectBottomNavBar({
     Key? key,
     required this.onSave,
@@ -18,6 +21,7 @@ class ObjectBottomNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 10),
       height: 80,
@@ -28,14 +32,15 @@ class ObjectBottomNavBar extends StatelessWidget {
           BottomNavItem(
             title: "Edit",
             svgScr: "assets/icons/edit-svgrepo-com.svg",
-            isActive: true,
+            isActive: false,
             press: onEdit,
           ),
-          BottomNavItem(
-            title: "Save",
+          Obx(()=>BottomNavItem(
+            isActive: false,
+            title: controller.isLoading.value?"Uploading...":"Save",
             svgScr: "assets/icons/save-svgrepo-com.svg",
-            press: onSave,
-          ),
+            press: controller.isLoading.value?(){}:onSave,
+          )),
           BottomNavItem(
             title: "Confirm",
             svgScr: "assets/icons/check-svgrepo-com.svg",

@@ -147,13 +147,11 @@ class Body extends StatelessWidget {
                         }),
                     );
                   } else {
-                    return CircularProgressIndicator();
+                    return Center(child: CircularProgressIndicator());
                   }
                 }
                 else{
-                  print('nodata');
-                  return Container();
-
+                  return Center(child: CircularProgressIndicator());
                 }
               }
             )
