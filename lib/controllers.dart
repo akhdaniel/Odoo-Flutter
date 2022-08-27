@@ -8,6 +8,8 @@ class Controller extends GetxController{
   var isLoading = false.obs;
   var objectName = ''.obs;
 
+  var showAddNew = false.obs;
+
   RxMap saleOrder = {}.obs;
 
   setCurrentUser(username)=>currentUser(username);

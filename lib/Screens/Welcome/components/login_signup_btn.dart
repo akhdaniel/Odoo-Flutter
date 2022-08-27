@@ -17,6 +17,7 @@ class LoginAndSignupBtn extends StatelessWidget {
           tag: "login_btn",
           child: ElevatedButton(
             onPressed: () {
+              //Get.toNamed('/login')
               Navigator.push(
                 context,
                 MaterialPageRoute(

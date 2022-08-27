@@ -17,6 +17,8 @@ final Controller c = Get.find();
 final TextEditingController _partnerIdController = TextEditingController();
 final TextEditingController _paymentTermIdController = TextEditingController();
 final TextEditingController _dateOrderController = TextEditingController();
+final TextEditingController _addNewProductController = TextEditingController();
+final TextEditingController _addNewQtyController = TextEditingController();
   
 OdooSession? session ;
 OdooClient? client ;
@@ -239,7 +241,7 @@ class Body extends StatelessWidget {
         'args': [],
         'kwargs': {
           'domain': [
-            ['id', 'in', ids]
+            ['id', 'in', ids] //[2,3,4]
           ],
         },
       });
@@ -256,7 +258,7 @@ class Body extends StatelessWidget {
 
   buildForm(context, record){
 
-    var lines = record['order_line'];
+    var lines = record['order_line'];//[3,4,5,6]
     var stateColor = getStateColor(record);
     var saleOrder = c.saleOrder;
 
@@ -304,7 +306,7 @@ class Body extends StatelessWidget {
                           controller: _dateOrderController,
                           onSelect: (date) {
                             saleOrder['orderDate'] = date;
-                            print(saleOrder.toString());
+                            // print(saleOrder.toString());
                           },
                         ),
                         
@@ -339,6 +341,7 @@ class Body extends StatelessWidget {
             alignment: Alignment.centerLeft,
             child: Text("Order Lines", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),)),
         ),
+        
         SizedBox(
           height: 300,
           child: Column(
@@ -365,12 +368,19 @@ class Body extends StatelessWidget {
                   }
                 },
               ),
-              TextButton(onPressed: () {}, child: Text("Add new item"))
+              TextButton(
+                onPressed: () {
+                  showDialog(context: context, builder: (context) {
+                    return AddNewForm();
+                  });
+                }, 
+                child: Text("Add new item")
+              )
             ],
           ),
         ),
-        
-        ]
+   
+      ]
     );
   }
 
@@ -418,6 +428,57 @@ class Body extends StatelessWidget {
     );
   }
 
+}
 
+class AddNewForm extends StatelessWidget {
+  const AddNewForm({
+    Key? key,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return SimpleDialog(
+      contentPadding: const EdgeInsets.all(20),
+      children: <Widget>[
+          Many2OneField(
+            object: 'product.product', 
+            value: const [], 
+            controller: _addNewProductController, 
+            hint: 'select product', 
+            label: 'Product', 
+            icon: Icons.add_box, 
+            onSelect: (master){}
+          ),
+          TextField(
+            controller: _addNewQtyController,
+            decoration: const InputDecoration(  
+              icon:  Icon(Icons.abc),  
+              hintText: 'Enter qty',  
+              labelText: 'Quantity',  
+            ),
+          ),
+          TextField(
+            controller: _addNewQtyController,
+            decoration: const InputDecoration(  
+              icon:  Icon(Icons.abc),  
+              hintText: 'Unit price',  
+              labelText: 'Unit Price',  
+            ),
+          ),
+          TextField(
+            controller: _addNewQtyController,
+            decoration: const InputDecoration(  
+              icon:  Icon(Icons.abc),  
+              hintText: 'Amount Subtotal',  
+              labelText: 'Sub Total',  
+            ),
+          ),
+          const SizedBox(height: 20),
+          ElevatedButton(
+            onPressed: (){}, 
+            child: Text("Ok")
+          )
+        ]);
+  }
 }
 
