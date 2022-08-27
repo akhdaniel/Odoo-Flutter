@@ -18,6 +18,7 @@ final TextEditingController _partnerIdController = TextEditingController();
 final TextEditingController _paymentTermIdController = TextEditingController();
 final TextEditingController _dateOrderController = TextEditingController();
 final TextEditingController _addNewProductController = TextEditingController();
+final TextEditingController _addNewUomController = TextEditingController();
 final TextEditingController _addNewQtyController = TextEditingController();
   
 OdooSession? session ;
@@ -31,7 +32,6 @@ class SaleOrderView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     c.loading(false);
-    print(c.isLoading);
     var size = MediaQuery.of(context).size*0.5; //this gonna give us total height and with of our device
     var name = Get.parameters['name'] ?? '0';
 
@@ -140,14 +140,9 @@ class Body extends StatelessWidget {
   String? subtitle ;
   final String? name;
 
-
-
-  
   @override
   Widget build(BuildContext context) {
-    
-    return c.isLoading==true ? Center(child: const CircularProgressIndicator()) : 
-      SafeArea(
+    return SafeArea(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20),
         child: Column(
@@ -171,7 +166,6 @@ class Body extends StatelessWidget {
               builder: (context, AsyncSnapshot<dynamic>  orderSnapshot) {
                 if (orderSnapshot.hasData) {
                   if (orderSnapshot.data!=null) {
-                    
                     return Expanded(
                       child: ListView.builder(
                         itemCount: orderSnapshot.data.length,
@@ -261,7 +255,7 @@ class Body extends StatelessWidget {
     var lines = record['order_line'];//[3,4,5,6]
     var stateColor = getStateColor(record);
     var saleOrder = c.saleOrder;
-
+    var size = MediaQuery.of(context).size;
 
     return Column(
       children: [
@@ -335,15 +329,35 @@ class Body extends StatelessWidget {
             ],
           ),
         ),
-        const Padding(
-          padding: EdgeInsets.all(8.0),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: Text("Order Lines", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),)),
+
+        Card(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8.0),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  "Order Lines", 
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w300),
+                ),
+                ElevatedButton(
+                    onPressed: () {
+                      showDialog(context: context, builder: (context) {
+                        return AddNewForm();
+                      });
+                    }, 
+                    child: Text("Add new item")
+                  )
+              ],
+            ),
+          ),
         ),
         
         SizedBox(
-          height: 300,
+          height: size.height*0.5,
           child: Column(
             children: [
               FutureBuilder(
@@ -356,7 +370,7 @@ class Body extends StatelessWidget {
                           itemCount: snapshot.data.length,
                           itemBuilder: (BuildContext context, int index) {
                             final record = snapshot.data[index] as Map<String, dynamic>;
-                            return buildListItem(record);
+                            return buildListItem(context, record);
                           }),
                       );
                     } else {
@@ -368,14 +382,6 @@ class Body extends StatelessWidget {
                   }
                 },
               ),
-              TextButton(
-                onPressed: () {
-                  showDialog(context: context, builder: (context) {
-                    return AddNewForm();
-                  });
-                }, 
-                child: Text("Add new item")
-              )
             ],
           ),
         ),
@@ -403,7 +409,7 @@ class Body extends StatelessWidget {
     return stateColor;
   }
 
-  Widget buildListItem(Map<String, dynamic> record) {
+  Widget buildListItem(context, Map<String, dynamic> record) {
     var unique = record['__last_update'] as String;
     unique = unique.replaceAll(RegExp(r'[^0-9]'), '');
 
@@ -414,6 +420,11 @@ class Body extends StatelessWidget {
         borderRadius: BorderRadius.circular(15.0),
       ),
       child: ListTile(
+        onTap: () => {
+          showDialog(context: context, builder: (context) {
+            return AddNewForm();
+          })
+        },
         leading: CircleAvatar(backgroundImage: NetworkImage(productUrl)),
         title: Text(record['name']),
         subtitle: Text(
@@ -457,6 +468,15 @@ class AddNewForm extends StatelessWidget {
               labelText: 'Quantity',  
             ),
           ),
+          Many2OneField(
+            object: 'product.uom', 
+            value: const [], 
+            controller: _addNewUomController, 
+            hint: 'select uom', 
+            label: 'UoM', 
+            icon: Icons.add_box, 
+            onSelect: (master){}
+          ),          
           TextField(
             controller: _addNewQtyController,
             decoration: const InputDecoration(  

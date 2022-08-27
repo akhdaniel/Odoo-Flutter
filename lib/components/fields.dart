@@ -59,7 +59,7 @@ class Many2OneField extends StatelessWidget {
 }
 
 class AmountField extends StatelessWidget {
-  const AmountField({
+  const AmountField({ 
     Key? key,
     required this.currency_id,
     required this.value,
