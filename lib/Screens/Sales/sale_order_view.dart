@@ -26,6 +26,8 @@ final TextEditingController _addNewPriceSubtotal = TextEditingController();
   
 OdooSession? session ;
 OdooClient? client ;
+SaleOrderModel saleOrder = SaleOrderModel(id: 0, name: '', partnerId: 0, paymentTermId: 0, orderDate: '', amountTotal: 0, state:'', orderLineIds: [], orderLines: []);
+List<SaleOrderLineModel> saleOrderLines = [];
 
 
 class SaleOrderView extends StatelessWidget {
@@ -38,8 +40,7 @@ class SaleOrderView extends StatelessWidget {
     var size = MediaQuery.of(context).size*0.5; //this gonna give us total height and with of our device
     var name = Get.parameters['name'] ?? '0';
 
-    SaleOrderModel saleOrder = SaleOrderModel(id: 0, name: '', partnerId: 0, paymentTermId: 0, orderDate: '', amountTotal: 0, state:'', orderLines: []);
-    c.saveSaleOrder(saleOrder.toJson());
+    // c.saveSaleOrder(saleOrder.toJson());
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
@@ -68,8 +69,16 @@ class SaleOrderView extends StatelessWidget {
 
   saveSaleOrder(context) async {
     // print('save');
-    var saleOrder = c.saleOrder;
-    // print(saleOrder);
+    // var saleOrder = c.saleOrder;
+    // print(saleOrderLines);
+    Iterable<List<Object>> orderLinesOrm = saleOrderLines.map((e) => [0,0,{
+      'product_id':e.productId[0],
+      'product_uom': e.uomId[0],
+      'product_uom_qty':e.qty,
+      'price_unit':e.priceUnit,
+      'price_subtotal':e.priceSubtotal,
+      }]);
+    print(orderLinesOrm.toList());
 
     final prefs = SharedPref();
     final sobj = await prefs.readObject('session');
@@ -78,26 +87,23 @@ class SaleOrderView extends StatelessWidget {
     
     c.isLoading.value = true;
 
-    try {
-      print('rpc');
-      // print(c.isLoading);
-      // print(c.isLoading);
+    try {      
       var response = await client?.callKw({
         'model': 'sale.order',
         'method': 'write',
         'args': [
-          [saleOrder['id']],
+          [saleOrder.id],
           {
-            'name': saleOrder['name'],
-            'date_order': saleOrder['orderDate'],
-            'partner_id': saleOrder['partnerId'],
-            'payment_term_id': saleOrder['paymentTermId'],
+            'name': saleOrder.name,
+            'date_order': saleOrder.orderDate,
+            'partner_id': saleOrder.partnerId,
+            'payment_term_id': saleOrder.paymentTermId,
+            'order_line': orderLinesOrm.toList(),
           }
         ],
         'kwargs': {},
       });
-      print(c.isLoading);
-      print(response);
+
       if(response!=null) {
         c.loading(false) ;
         showDialog(context: context, builder: (context) {
@@ -113,7 +119,7 @@ class SaleOrderView extends StatelessWidget {
       showDialog(context: context, builder: (context) {
         return SimpleDialog(
             children: <Widget>[
-                  Center(child: Text("Erro save ${e.toString()}"))
+                  Center(child: Text("Error on save ${e.toString()}"))
             ]);
       });
     }
@@ -176,8 +182,8 @@ class Body extends StatelessWidget {
                         itemCount: orderSnapshot.data.length,
                         itemBuilder: (BuildContext context, int index) {
                           final record = orderSnapshot.data[index] as Map<String, dynamic>;
-                          var saleOrder = SaleOrderModel.fromJson(record);
-                          c.saveSaleOrder(saleOrder.toJson());
+                          saleOrder = SaleOrderModel.fromJson(record);
+                          // c.saveSaleOrder(saleOrder.toJson());
                           // print(c.saleOrder);
                           // _dateOrderController.text = saleOrder.orderDate;
                           return buildForm(context, record);
@@ -228,7 +234,7 @@ class Body extends StatelessWidget {
     }
   }
  
-  getOrderLies(context, ids) async {
+  getOrderLines(context, ids) async {
     final prefs = SharedPref();
     final sobj = await prefs.readObject('session');
     session = OdooSession.fromJson(sobj);
@@ -242,6 +248,7 @@ class Body extends StatelessWidget {
           'domain': [
             ['id', 'in', ids] //[2,3,4]
           ],
+          'fields':['id','order_id','name','currency_id','product_id','product_uom_qty','product_uom','price_unit','price_subtotal','__last_update']
         },
       });
     } catch (e) { 
@@ -259,7 +266,7 @@ class Body extends StatelessWidget {
 
     var lines = record['order_line'];//[3,4,5,6]
     var stateColor = getStateColor(record);
-    var saleOrder = c.saleOrder;
+    // var saleOrder = c.saleOrder;
     var size = MediaQuery.of(context).size;
 
     return Column(
@@ -295,7 +302,7 @@ class Body extends StatelessWidget {
                           icon: Icons.person,
                           controller: _partnerIdController,
                           onSelect: (master) {
-                            saleOrder['partnerId'] = int.parse(master['id']);
+                            saleOrder.partnerId = int.parse(master['id']);
                             _partnerIdController.text = master['name'];
                             },
                         ),
@@ -304,7 +311,7 @@ class Body extends StatelessWidget {
                           initialValue: record['date_order'],
                           controller: _dateOrderController,
                           onSelect: (date) {
-                            saleOrder['orderDate'] = date;
+                            saleOrder.orderDate = date;
                             // print(saleOrder.toString());
                           },
                         ),
@@ -317,7 +324,7 @@ class Body extends StatelessWidget {
                           icon: Icons.abc,
                           controller: _paymentTermIdController,
                           onSelect: (master) {
-                            saleOrder['paymentTermId'] = int.parse(master['id']);
+                            saleOrder.paymentTermId = int.parse(master['id']);
                             _paymentTermIdController.text = master['name'];
                           },
                         ),
@@ -351,7 +358,7 @@ class Body extends StatelessWidget {
                 ElevatedButton(
                     onPressed: () {
                       var sol = SaleOrderLineModel.newOrderLine();
-                      print(sol);
+                      // print(saleOrder);
                       c.saveSaleOrderLine(sol);
                       showDialog(context: context, builder: (context) {
                         return SaleOrderLineForm();
@@ -369,15 +376,18 @@ class Body extends StatelessWidget {
           child: Column(
             children: [
               FutureBuilder(
-                future: getOrderLies(context, lines),
+                future: getOrderLines(context, lines),
                 builder: (context, AsyncSnapshot<dynamic> snapshot) {
                   if (snapshot.hasData) {
-                    if (snapshot.data!=null) {                  
+                    if (snapshot.data!=null) {     
+                      saleOrderLines.clear();             
                       return Expanded(
                         child: ListView.builder(
                           itemCount: snapshot.data.length,
                           itemBuilder: (BuildContext context, int index) {
                             final record = snapshot.data[index] as Map<String, dynamic>;
+                            saleOrderLines.add( SaleOrderLineModel.fromJson(record));
+                            // print(saleOrderLines);
                             return buildListItem(context, record);
                           }),
                       );
@@ -430,7 +440,7 @@ class Body extends StatelessWidget {
       child: ListTile(
         onTap: ()  {
           SaleOrderLineModel sol = SaleOrderLineModel.fromJson(record);
-          print(sol);
+          // print(sol);
           c.saveSaleOrderLine(sol.toJson());
           showDialog(context: context, builder: (context) {
             return SaleOrderLineForm();
@@ -460,8 +470,10 @@ class SaleOrderLineForm extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     var value = c.saleOrderLine.value;
-    var saleOrder = c.saleOrder.value;
     SaleOrderLineModel sol = SaleOrderLineModel.fromJson(value);
+    // var saleOrder = c.saleOrder.value;
+    // print(saleOrder);
+    
     _addNewQtyController.text = sol.qty.toString();
     _addNewPriceUnit.text = sol.priceUnit.toString();
     _addNewPriceSubtotal.text = sol.priceSubtotal.toString();

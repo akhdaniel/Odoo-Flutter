@@ -26,7 +26,7 @@ class SaleOrderLineModel {
       'name': '', 
       'product_id': [0,''], 
       'order_id': [0,''], 
-      'uom_id': [0,''], 
+      'product_uom': [0,''], 
       'product_uom_qty': 0.0, 
       'price_unit': 0.0,
       'price_subtotal': 0.0,
@@ -35,12 +35,13 @@ class SaleOrderLineModel {
 
   static fromJson(record){
     print('load order line from json');
+
     return SaleOrderLineModel(
       id: record['id'], 
       name: record['name'], 
       productId: record['product_id'], 
       saleOrderId: record['order_id'] , 
-      uomId: record['uom_id'] ?? [] , 
+      uomId: record['product_uom'], 
       qty: record['product_uom_qty'], 
       priceUnit: record['price_unit'],
       priceSubtotal: record['price_subtotal'],
@@ -61,7 +62,7 @@ class SaleOrderLineModel {
       'product_uom_qty':qty, 
       'price_unit': priceUnit, 
       'price_subtotal':priceSubtotal, 
-      'uom_id':uomId, 
+      'product_uom':uomId, 
     };
 
   }  

@@ -8,6 +8,7 @@ class SaleOrderModel {
     required this.orderDate,
     required this.amountTotal,
     required this.state,
+    required this.orderLineIds,
     required this.orderLines,
   });
 
@@ -18,6 +19,7 @@ class SaleOrderModel {
   String orderDate;
   String state;
   double amountTotal;
+  List orderLineIds;
   List orderLines;
 
 
@@ -31,7 +33,8 @@ class SaleOrderModel {
       orderDate: record['date_order'], 
       amountTotal: record['amount_total'],
       state: record['state'],
-      orderLines: record['order_line'],
+      orderLineIds: record['order_line'],
+      orderLines: [],
     );
   }
 
@@ -49,6 +52,7 @@ class SaleOrderModel {
       'orderDate':orderDate, 
       'amountTotal': amountTotal, 
       'state':state, 
+      'orderLineIds':orderLineIds,
       'orderLines':orderLines
     };
 
