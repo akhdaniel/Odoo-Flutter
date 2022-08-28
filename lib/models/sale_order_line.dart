@@ -7,49 +7,61 @@ class SaleOrderLineModel {
     required this.saleOrderId,
     required this.uomId,
     required this.qty,
-    required this.unitPrice,
+    required this.priceUnit,
     required this.priceSubtotal,
   });
 
   int id;
   String name;
-  int productId;
-  int saleOrderId;
-  int uomId;
-  String qty;
-  String priceSubtotal;
-  double unitPrice;
+  List productId;
+  List saleOrderId;
+  List uomId;
+  double qty;
+  double priceSubtotal;
+  double priceUnit;
 
+  static newOrderLine(){
+    return {
+      'id': 0, 
+      'name': '', 
+      'product_id': [0,''], 
+      'order_id': [0,''], 
+      'uom_id': [0,''], 
+      'product_uom_qty': 0.0, 
+      'price_unit': 0.0,
+      'price_subtotal': 0.0,
+    };
+  }
 
   static fromJson(record){
     print('load order line from json');
     return SaleOrderLineModel(
       id: record['id'], 
       name: record['name'], 
-      productId: (record['product_id'] is List)?record['product_id'][0]:0, 
-      saleOrderId: (record['order_id'] is List)?record['order_id'][0]:0, 
-      uomId: (record['uom_id'] is List)?record['uom_id'][0]:0, 
+      productId: record['product_id'], 
+      saleOrderId: record['order_id'] , 
+      uomId: record['uom_id'] ?? [] , 
       qty: record['product_uom_qty'], 
-      unitPrice: record['price_unit'],
+      priceUnit: record['price_unit'],
       priceSubtotal: record['price_subtotal'],
     );
   }
 
   @override
   String toString() {
-    return "{'id': $id, 'name':'$name', 'productId':$productId, 'saleOrderId':$saleOrderId, 'qty':'$qty', 'unitPrice':$unitPrice, 'priceSubtotal':'$priceSubtotal', 'uomId':$uomId}";
+    return "{'id': $id, 'name':'$name', 'productId':$productId, 'saleOrderId':$saleOrderId, 'qty':'$qty', 'priceUnit':$priceUnit, 'priceSubtotal':'$priceSubtotal', 'uomId':$uomId}";
   }
 
   toJson() {
     return {
       'id': id, 
       'name':name, 
-      'productId':productId, 
-      'saleOrderId':saleOrderId, 
-      'qty':qty, 
-      'unitPrice': unitPrice, 
-      'priceSubtotal':priceSubtotal, 
-      'uomId':uomId, 
+      'product_id':productId, 
+      'order_id':saleOrderId,
+      'product_uom_qty':qty, 
+      'price_unit': priceUnit, 
+      'price_subtotal':priceSubtotal, 
+      'uom_id':uomId, 
     };
 
   }  

@@ -11,6 +11,8 @@ class Controller extends GetxController{
   var showAddNew = false.obs;
 
   RxMap saleOrder = {}.obs;
+  RxMap saleOrderLine = {}.obs;
+
 
   setCurrentUser(username)=>currentUser(username);
   setDb(newDb)=>db(newDb);
@@ -28,6 +30,10 @@ class Controller extends GetxController{
 
   saveSaleOrder(so){
     saleOrder(so);
+  }
+
+  saveSaleOrderLine(sol){
+    saleOrderLine(sol);
   }
 
 }

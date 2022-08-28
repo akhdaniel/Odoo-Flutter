@@ -9,6 +9,7 @@ import '../../components/object_bottom_nav_bar.dart';
 import '../../constants.dart';
 import '../../controllers.dart';
 import '../../models/sale_order.dart';
+import '../../models/sale_order_line.dart';
 import '../../shared_prefs.dart';
 import '../header.dart';
 
@@ -20,6 +21,8 @@ final TextEditingController _dateOrderController = TextEditingController();
 final TextEditingController _addNewProductController = TextEditingController();
 final TextEditingController _addNewUomController = TextEditingController();
 final TextEditingController _addNewQtyController = TextEditingController();
+final TextEditingController _addNewPriceUnit = TextEditingController();
+final TextEditingController _addNewPriceSubtotal = TextEditingController();
   
 OdooSession? session ;
 OdooClient? client ;
@@ -120,6 +123,7 @@ class SaleOrderView extends StatelessWidget {
     print('edit');
     print(c.saleOrder);
   }
+  
   void confirmSaleOrder(){
     print('confirm');
     print(c.saleOrder);
@@ -139,6 +143,7 @@ class Body extends StatelessWidget {
   final String? title;
   String? subtitle ;
   final String? name;
+  
 
   @override
   Widget build(BuildContext context) {
@@ -345,8 +350,11 @@ class Body extends StatelessWidget {
                 ),
                 ElevatedButton(
                     onPressed: () {
+                      var sol = SaleOrderLineModel.newOrderLine();
+                      print(sol);
+                      c.saveSaleOrderLine(sol);
                       showDialog(context: context, builder: (context) {
-                        return AddNewForm();
+                        return SaleOrderLineForm();
                       });
                     }, 
                     child: Text("Add new item")
@@ -420,10 +428,13 @@ class Body extends StatelessWidget {
         borderRadius: BorderRadius.circular(15.0),
       ),
       child: ListTile(
-        onTap: () => {
+        onTap: ()  {
+          SaleOrderLineModel sol = SaleOrderLineModel.fromJson(record);
+          print(sol);
+          c.saveSaleOrderLine(sol.toJson());
           showDialog(context: context, builder: (context) {
-            return AddNewForm();
-          })
+            return SaleOrderLineForm();
+          });
         },
         leading: CircleAvatar(backgroundImage: NetworkImage(productUrl)),
         title: Text(record['name']),
@@ -441,24 +452,34 @@ class Body extends StatelessWidget {
 
 }
 
-class AddNewForm extends StatelessWidget {
-  const AddNewForm({
+class SaleOrderLineForm extends StatelessWidget {
+  const SaleOrderLineForm({
     Key? key,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    var value = c.saleOrderLine.value;
+    var saleOrder = c.saleOrder.value;
+    SaleOrderLineModel sol = SaleOrderLineModel.fromJson(value);
+    _addNewQtyController.text = sol.qty.toString();
+    _addNewPriceUnit.text = sol.priceUnit.toString();
+    _addNewPriceSubtotal.text = sol.priceSubtotal.toString();
+    // print(sol);
     return SimpleDialog(
       contentPadding: const EdgeInsets.all(20),
       children: <Widget>[
           Many2OneField(
             object: 'product.product', 
-            value: const [], 
+            value: sol.productId, 
             controller: _addNewProductController, 
             hint: 'select product', 
             label: 'Product', 
             icon: Icons.add_box, 
-            onSelect: (master){}
+            onSelect: (master){
+              _addNewProductController.text = master['name'];
+              sol.productId = master['id'];
+            }
           ),
           TextField(
             controller: _addNewQtyController,
@@ -470,15 +491,17 @@ class AddNewForm extends StatelessWidget {
           ),
           Many2OneField(
             object: 'product.uom', 
-            value: const [], 
+            value: sol.uomId, 
             controller: _addNewUomController, 
             hint: 'select uom', 
             label: 'UoM', 
             icon: Icons.add_box, 
-            onSelect: (master){}
+            onSelect: (master){
+              _addNewUomController.text = master['name'];
+            }
           ),          
           TextField(
-            controller: _addNewQtyController,
+            controller: _addNewPriceUnit,
             decoration: const InputDecoration(  
               icon:  Icon(Icons.abc),  
               hintText: 'Unit price',  
@@ -486,7 +509,7 @@ class AddNewForm extends StatelessWidget {
             ),
           ),
           TextField(
-            controller: _addNewQtyController,
+            controller: _addNewPriceSubtotal,
             decoration: const InputDecoration(  
               icon:  Icon(Icons.abc),  
               hintText: 'Amount Subtotal',  
@@ -495,7 +518,9 @@ class AddNewForm extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           ElevatedButton(
-            onPressed: (){}, 
+            onPressed: (){
+
+            }, 
             child: Text("Ok")
           )
         ]);
