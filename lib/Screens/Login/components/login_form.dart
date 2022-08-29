@@ -95,14 +95,18 @@ class _LoginFormState extends State<LoginForm> {
     final client = OdooClient(baseUrl);
     try {
       final session = await client.authenticate(db, _usernameController.text, _passwordController.text);
+      
       final prefs = SharedPref();
       prefs.saveObject('session', session); 
       prefs.saveString('baseUrl', baseUrl);
       prefs.saveString('db', db);
+
+
       c.setCurrentUser(session.userName);
       c.setDb(db);
       c.setBaseUrl(baseUrl);
       c.loggedIn();
+      
       Get.to(Home());
 
     } on OdooException catch (e) {

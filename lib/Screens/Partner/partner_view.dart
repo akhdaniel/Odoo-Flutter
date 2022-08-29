@@ -125,10 +125,10 @@ class Body extends StatelessWidget {
     // final top = coverHeight  - profileHight;
     return FutureBuilder(
       future: getPartner(context, id),
-      builder: (context, AsyncSnapshot<dynamic>  orderSnapshot) {
-        if (orderSnapshot.hasData) {
-          if (orderSnapshot.data!=null) {
-            final record = orderSnapshot.data[0] as Map<String, dynamic>;
+      builder: (context, AsyncSnapshot<dynamic>  snapshot) {
+        if (snapshot.hasData) {
+          if (snapshot.data!=null) {
+            final record = snapshot.data[0] as Map<String, dynamic>;
             final partnerImageUrl ='${client?.baseURL}/web/image?model=res.partner&field=image&id=${record["id"]}&unique=';
             var street = record['street'] is String ? record['street'] : '';
             street = street + (record['street2'] is String ? ', '+ record['street2'] : '');
@@ -196,11 +196,11 @@ class Body extends StatelessWidget {
             );
 
           } else {
-            return CircularProgressIndicator();
+            return Center(child: CircularProgressIndicator());
           }
         }
         else{
-          return Container(child: Text("No data.."),);
+          return Center(child: CircularProgressIndicator());
         }
       }
     );

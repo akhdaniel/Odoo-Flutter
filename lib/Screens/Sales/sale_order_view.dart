@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:odoo_rpc/odoo_rpc.dart';
@@ -23,24 +21,22 @@ final TextEditingController _addNewUomController = TextEditingController();
 final TextEditingController _addNewQtyController = TextEditingController();
 final TextEditingController _addNewPriceUnit = TextEditingController();
 final TextEditingController _addNewPriceSubtotal = TextEditingController();
-  
+
 OdooSession? session ;
 OdooClient? client ;
 SaleOrderModel saleOrder = SaleOrderModel(id: 0, name: '', partnerId: 0, paymentTermId: 0, orderDate: '', amountTotal: 0, state:'', orderLineIds: [], orderLines: []);
 List<SaleOrderLineModel> saleOrderLines = [];
+SaleOrderLineModel currentSaleOrderLine = SaleOrderLineModel.newOrderLine();
 
 
 class SaleOrderView extends StatelessWidget {
   const SaleOrderView({Key? key}) : super(key: key);
-
 
   @override
   Widget build(BuildContext context) {
     c.loading(false);
     var size = MediaQuery.of(context).size*0.5; //this gonna give us total height and with of our device
     var name = Get.parameters['name'] ?? '0';
-
-    // c.saveSaleOrder(saleOrder.toJson());
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
@@ -68,9 +64,7 @@ class SaleOrderView extends StatelessWidget {
   }
 
   saveSaleOrder(context) async {
-    // print('save');
-    // var saleOrder = c.saleOrder;
-    // print(saleOrderLines);
+
     Iterable<List<Object>> orderLinesOrm = saleOrderLines.map((e) => [0,0,{
       'product_id':e.productId[0],
       'product_uom': e.uomId[0],
@@ -78,7 +72,6 @@ class SaleOrderView extends StatelessWidget {
       'price_unit':e.priceUnit,
       'price_subtotal':e.priceSubtotal,
       }]);
-    print(orderLinesOrm.toList());
 
     final prefs = SharedPref();
     final sobj = await prefs.readObject('session');
@@ -98,7 +91,7 @@ class SaleOrderView extends StatelessWidget {
             'date_order': saleOrder.orderDate,
             'partner_id': saleOrder.partnerId,
             'payment_term_id': saleOrder.paymentTermId,
-            'order_line': orderLinesOrm.toList(),
+            'order_line': orderLinesOrm.toList(),//o2m fields
           }
         ],
         'kwargs': {},
@@ -107,7 +100,7 @@ class SaleOrderView extends StatelessWidget {
       if(response!=null) {
         c.loading(false) ;
         showDialog(context: context, builder: (context) {
-          return SimpleDialog(
+          return const SimpleDialog(
               children: <Widget>[
                     Center(child: Text("Successfull save"))
               ]);
@@ -149,7 +142,6 @@ class Body extends StatelessWidget {
   final String? title;
   String? subtitle ;
   final String? name;
-  
 
   @override
   Widget build(BuildContext context) {
@@ -168,6 +160,7 @@ class Body extends StatelessWidget {
               name.toString(),
               style:TextStyle(fontSize: 25, fontWeight: FontWeight.w900, color: Colors.white),
             ),
+            
             name=='new'? 
             buildForm(context, 
               {'state':'draft','name':'','partner_id':[0,''],'date_order':'','payment_term_id':[0,''],'currency_id':[0,'']}
@@ -183,13 +176,9 @@ class Body extends StatelessWidget {
                         itemBuilder: (BuildContext context, int index) {
                           final record = orderSnapshot.data[index] as Map<String, dynamic>;
                           saleOrder = SaleOrderModel.fromJson(record);
-                          // c.saveSaleOrder(saleOrder.toJson());
-                          // print(c.saleOrder);
-                          // _dateOrderController.text = saleOrder.orderDate;
                           return buildForm(context, record);
                         }),
                     );
-
                   } else {
                     return Center(child: CircularProgressIndicator());
                   }
@@ -220,7 +209,6 @@ class Body extends StatelessWidget {
           'domain': [
             ['name', '=', name]
           ],
-          // 'fields': ['id', 'name', '__last_update', 'amount_total'],
         },
       });
     } catch (e) { 
@@ -255,18 +243,16 @@ class Body extends StatelessWidget {
       client?.close();
       showDialog(context: context, builder: (context) {
         return SimpleDialog(
-            children: <Widget>[
-                  Center(child: Text(e.toString()))
-            ]);
+          children: <Widget>[
+            Center(child: Text(e.toString()))
+          ]);
       });
     }
   }
 
   buildForm(context, record){
-
     var lines = record['order_line'];//[3,4,5,6]
     var stateColor = getStateColor(record);
-    // var saleOrder = c.saleOrder;
     var size = MediaQuery.of(context).size;
 
     return Column(
@@ -357,14 +343,12 @@ class Body extends StatelessWidget {
                 ),
                 ElevatedButton(
                     onPressed: () {
-                      var sol = SaleOrderLineModel.newOrderLine();
-                      // print(saleOrder);
-                      c.saveSaleOrderLine(sol);
+                      currentSaleOrderLine = SaleOrderLineModel.newOrderLine();
                       showDialog(context: context, builder: (context) {
-                        return SaleOrderLineForm();
+                        return const SaleOrderLineForm();
                       });
                     }, 
-                    child: Text("Add new item")
+                    child: const Text("Add new item")
                   )
               ],
             ),
@@ -387,16 +371,15 @@ class Body extends StatelessWidget {
                           itemBuilder: (BuildContext context, int index) {
                             final record = snapshot.data[index] as Map<String, dynamic>;
                             saleOrderLines.add( SaleOrderLineModel.fromJson(record));
-                            // print(saleOrderLines);
                             return buildListItem(context, record);
                           }),
                       );
                     } else {
-                      return Center(child: CircularProgressIndicator());
+                      return const Center(child: CircularProgressIndicator());
                     }
                   }
                   else{
-                    return Center(child: CircularProgressIndicator());
+                    return const Center(child: CircularProgressIndicator());
                   }
                 },
               ),
@@ -440,10 +423,9 @@ class Body extends StatelessWidget {
       child: ListTile(
         onTap: ()  {
           SaleOrderLineModel sol = SaleOrderLineModel.fromJson(record);
-          // print(sol);
           c.saveSaleOrderLine(sol.toJson());
           showDialog(context: context, builder: (context) {
-            return SaleOrderLineForm();
+            return const SaleOrderLineForm();
           });
         },
         leading: CircleAvatar(backgroundImage: NetworkImage(productUrl)),
@@ -469,28 +451,27 @@ class SaleOrderLineForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    var value = c.saleOrderLine.value;
-    SaleOrderLineModel sol = SaleOrderLineModel.fromJson(value);
-    // var saleOrder = c.saleOrder.value;
-    // print(saleOrder);
+    // var value = c.saleOrderLine.value;
+    // SaleOrderLineModel sol = SaleOrderLineModel.fromJson(value);
     
-    _addNewQtyController.text = sol.qty.toString();
-    _addNewPriceUnit.text = sol.priceUnit.toString();
-    _addNewPriceSubtotal.text = sol.priceSubtotal.toString();
+    _addNewQtyController.text = currentSaleOrderLine.qty.toString();
+    _addNewPriceUnit.text = currentSaleOrderLine.priceUnit.toString();
+    _addNewPriceSubtotal.text = currentSaleOrderLine.priceSubtotal.toString();
     // print(sol);
     return SimpleDialog(
       contentPadding: const EdgeInsets.all(20),
       children: <Widget>[
           Many2OneField(
             object: 'product.product', 
-            value: sol.productId, 
+            value: currentSaleOrderLine.productId, 
             controller: _addNewProductController, 
             hint: 'select product', 
             label: 'Product', 
             icon: Icons.add_box, 
             onSelect: (master){
               _addNewProductController.text = master['name'];
-              sol.productId = master['id'];
+              currentSaleOrderLine.productId = [master['id'], master['name']];
+              currentSaleOrderLine.name = master['name'];
             }
           ),
           TextField(
@@ -503,13 +484,14 @@ class SaleOrderLineForm extends StatelessWidget {
           ),
           Many2OneField(
             object: 'product.uom', 
-            value: sol.uomId, 
+            value: currentSaleOrderLine.uomId, 
             controller: _addNewUomController, 
             hint: 'select uom', 
             label: 'UoM', 
             icon: Icons.add_box, 
             onSelect: (master){
               _addNewUomController.text = master['name'];
+              currentSaleOrderLine.uomId = [master['id'], master['name']];
             }
           ),          
           TextField(
@@ -531,11 +513,23 @@ class SaleOrderLineForm extends StatelessWidget {
           const SizedBox(height: 20),
           ElevatedButton(
             onPressed: (){
+              saleOrderLines.add(
+                SaleOrderLineModel(
+                  id: 0, 
+                  name: currentSaleOrderLine.name,
+                  productId: currentSaleOrderLine.productId, 
+                  saleOrderId: [saleOrder.id, saleOrder.name], 
+                  uomId: currentSaleOrderLine.uomId, 
+                  qty: currentSaleOrderLine.qty, 
+                  priceUnit: currentSaleOrderLine.priceUnit, 
+                  priceSubtotal: currentSaleOrderLine.priceSubtotal
+                )
+              );
 
+              print(saleOrderLines);
             }, 
-            child: Text("Ok")
+            child: const Text("Ok")
           )
         ]);
   }
 }
-

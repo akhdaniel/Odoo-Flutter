@@ -5,6 +5,7 @@ import 'package:odoo_rpc/odoo_rpc.dart';
 
 import '../../constants.dart';
 import '../../controllers.dart';
+
 import '../../shared_prefs.dart';
 import '../Home/widgets/search_bar.dart';
 import '../header.dart';
@@ -34,7 +35,7 @@ class PartnerScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    var size = MediaQuery.of(context).size*0.5; //this gonna give us total height and with of our device
+    var size = MediaQuery.of(context).size*0.8; //this gonna give us total height and with of our device
     var type = Get.parameters['type'] ?? 'customer';
 
     return Scaffold(
@@ -128,9 +129,7 @@ class Body extends StatelessWidget {
                       child: ListView.builder(
                         itemCount: orderSnapshot.data.length,
                         itemBuilder: (BuildContext context, int index) {
-                          // SaleOrderModel saleOrder = orderSnapshot.data[index];
                           final record = orderSnapshot.data[index] as Map<String, dynamic>;
-                          // print(record);
                           return buildListItem(record);
                         }),
                     );

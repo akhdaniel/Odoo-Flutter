@@ -21,16 +21,26 @@ class SaleOrderLineModel {
   double priceUnit;
 
   static newOrderLine(){
-    return {
-      'id': 0, 
-      'name': '', 
-      'product_id': [0,''], 
-      'order_id': [0,''], 
-      'product_uom': [0,''], 
-      'product_uom_qty': 0.0, 
-      'price_unit': 0.0,
-      'price_subtotal': 0.0,
-    };
+    return SaleOrderLineModel(
+      id: 0, 
+      name: '', 
+      productId: [0,''], 
+      saleOrderId: [0, ''], 
+      uomId: [0,''], 
+      qty: 0.0, 
+      priceUnit: 0.0,
+      priceSubtotal: 0.0,
+    );    
+    // return {
+    //   'id': 0, 
+    //   'name': '', 
+    //   'product_id': [0,''], 
+    //   'order_id': [0,''], 
+    //   'product_uom': [0,''], 
+    //   'product_uom_qty': 0.0, 
+    //   'price_unit': 0.0,
+    //   'price_subtotal': 0.0,
+    // };
   }
 
   static fromJson(record){

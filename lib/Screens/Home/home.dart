@@ -126,7 +126,7 @@ class Body extends StatelessWidget {
               "Good Morning",
               style:TextStyle(fontSize: 25, fontWeight: FontWeight.w100, color: Colors.white),
             ),
-              Text(
+            Text(
               "$username",
               style:TextStyle(fontSize: 25, fontWeight: FontWeight.w900, color: Colors.white),
             ),

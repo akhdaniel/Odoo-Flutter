@@ -135,13 +135,11 @@ class Body extends StatelessWidget {
               future: getOrders(context, states),
               builder: (context, AsyncSnapshot<dynamic>  orderSnapshot) {
                 if (orderSnapshot.hasData) {
-                  // print(orderSnapshot.data[0].toString());
                   if (orderSnapshot.data!=null) {
                     return Expanded(
                       child: ListView.builder(
                         itemCount: orderSnapshot.data.length,
                         itemBuilder: (BuildContext context, int index) {
-                          // SaleOrderModel saleOrder = orderSnapshot.data[index];
                           final record = orderSnapshot.data[index] as Map<String, dynamic>;
                           return buildListItem(record);
                         }),
