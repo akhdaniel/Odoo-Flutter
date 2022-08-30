@@ -109,13 +109,13 @@ class _LoginFormState extends State<LoginForm> {
       
       Get.to(Home());
 
-    } on OdooException catch (e) {
+    } on Exception catch (e) {
       client.close();
       showDialog(context: context, builder: (context) {
         return SimpleDialog(
-            children: <Widget>[
-                  Center(child: Text(e.toString()))
-            ]);
+          children: <Widget>[
+            Center(child: Text(e.toString()))
+          ]);
       });
     }
     client.close();

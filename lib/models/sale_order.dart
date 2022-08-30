@@ -5,6 +5,7 @@ class SaleOrderModel {
     required this.name,
     required this.partnerId,
     required this.paymentTermId,
+    required this.currencyId,
     required this.orderDate,
     required this.amountTotal,
     required this.state,
@@ -15,8 +16,9 @@ class SaleOrderModel {
 
   int id;
   String name;
-  int partnerId;
-  int paymentTermId;
+  List partnerId;
+  List currencyId;
+  List paymentTermId;
   String orderDate;
   String state;
   double amountTotal;
@@ -30,8 +32,9 @@ class SaleOrderModel {
     return SaleOrderModel(
       id: record['id'], 
       name: record['name'], 
-      partnerId: (record['partner_id'] is List)?record['partner_id'][0]:0, 
-      paymentTermId: (record['payment_term_id'] is List)?record['payment_term_id'][0]:0, 
+      partnerId: record['partner_id'] , 
+      currencyId: record['currency_id'], 
+      paymentTermId: record['payment_term_id'], 
       orderDate: record['date_order'], 
       amountTotal: record['amount_total'],
       state: record['state'],
@@ -43,7 +46,7 @@ class SaleOrderModel {
 
   @override
   String toString() {
-    return "{'id': $id, 'name':'$name', 'partnerId':$partnerId, 'paymentTermId':$paymentTermId, 'orderDate':'$orderDate', 'amountTotal':$amountTotal, 'state':'$state', 'orderLines':$orderLines}";
+    return "{'id': $id, 'name':'$name', 'partnerId':$partnerId, 'currencyId':$currencyId, 'paymentTermId':$paymentTermId, 'orderDate':'$orderDate', 'amountTotal':$amountTotal, 'state':'$state', 'orderLines':$orderLines}";
   }
 
   toJson() {
@@ -52,6 +55,7 @@ class SaleOrderModel {
       'name':name, 
       'partnerId':partnerId, 
       'paymentTermId':paymentTermId, 
+      'currencyId':currencyId, 
       'orderDate':orderDate, 
       'amountTotal': amountTotal, 
       'state':state, 
@@ -59,6 +63,22 @@ class SaleOrderModel {
       'orderLines':orderLines
     };
 
+  }
+
+  static SaleOrderModel newSaleOrder() {
+    return SaleOrderModel(
+      id: 0, 
+      name: '', 
+      partnerId: [], 
+      paymentTermId: [], 
+      currencyId: [], 
+      orderDate: '', 
+      amountTotal: 0, 
+      state:'', 
+      orderLineIds: [], 
+      orderLines: [], 
+      lastUpdate:''
+    );
   }  
 }
 

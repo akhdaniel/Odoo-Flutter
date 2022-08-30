@@ -20,7 +20,7 @@ final TextEditingController _dateOrderController = TextEditingController();
 
 OdooSession? session ;
 OdooClient? client ;
-SaleOrderModel saleOrder = SaleOrderModel(id: 0, name: '', partnerId: 0, paymentTermId: 0, orderDate: '', amountTotal: 0, state:'', orderLineIds: [], orderLines: [], lastUpdate:'');
+SaleOrderModel saleOrder = SaleOrderModel.newSaleOrder();
 // List saleOrderLines = [];
 var saleOrderLines = c.saleOrderLines.value;
 SaleOrderLineModel currentSaleOrderLine = SaleOrderLineModel.newOrderLine();
@@ -293,10 +293,11 @@ class Body extends StatelessWidget {
                           value: record['partner_id'], 
                           hint:'Select customer',
                           label: 'Customer',
+                          fields: ['id','name','city'],
                           icon: Icons.person,
                           controller: _partnerIdController,
                           onSelect: (master) {
-                            saleOrder.partnerId = int.parse(master['id']);
+                            saleOrder.partnerId = [int.parse(master['id']), master['name']];
                             _partnerIdController.text = master['name'];
                             },
                         ),
@@ -315,10 +316,11 @@ class Body extends StatelessWidget {
                           value: (record['payment_term_id'] is List) ? record['payment_term_id'] : [], 
                           hint:'Select payment term',
                           label: 'Payment Term',
+                          fields: ['id','name'],
                           icon: Icons.abc,
                           controller: _paymentTermIdController,
                           onSelect: (master) {
-                            saleOrder.paymentTermId = int.parse(master['id']);
+                            saleOrder.paymentTermId = [int.parse(master['id']), master['name']];
                             _paymentTermIdController.text = master['name'];
                           },
                         ),
@@ -352,6 +354,7 @@ class Body extends StatelessWidget {
                 ElevatedButton(
                     onPressed: () {
                       currentSaleOrderLine = SaleOrderLineModel.newOrderLine();
+                      currentSaleOrderLine.currencyId = [saleOrder.currencyId,''];
                       showDialog(context: context, builder: (context) {
                         return SaleOrderLineForm();
                       });
@@ -491,10 +494,17 @@ class SaleOrderLineForm extends StatelessWidget {
             hint: 'select product', 
             label: 'Product', 
             icon: Icons.add_box, 
+            fields: ['id','name','list_price'],
             onSelect: (master){
               _addNewProductController.text = master['name'];
+              _addNewPriceUnit.text = master['price'];
+
               currentSaleOrderLine.productId = [master['id'], master['name']];
               currentSaleOrderLine.name = master['name'];
+              currentSaleOrderLine.priceUnit = double.parse(master['price']);
+              currentSaleOrderLine.priceSubtotal = currentSaleOrderLine.priceUnit * currentSaleOrderLine.qty ;
+
+              _addNewPriceSubtotal.text = currentSaleOrderLine.priceSubtotal.toString();
             }
           ),
           TextField(
@@ -511,12 +521,13 @@ class SaleOrderLineForm extends StatelessWidget {
             controller: _addNewUomController, 
             hint: 'select uom', 
             label: 'UoM', 
+            fields: ['id','name'],
             icon: Icons.add_box, 
             onSelect: (master){
               _addNewUomController.text = master['name'];
               currentSaleOrderLine.uomId = [master['id'], master['name']];
             }
-          ),          
+          ),
           TextField(
             controller: _addNewPriceUnit,
             decoration: const InputDecoration(  

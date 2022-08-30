@@ -15,6 +15,7 @@ class Many2OneField extends StatelessWidget {
     required this.label,
     required this.icon,
     required this.onSelect,
+    required this.fields,
     // required this.subTitleField,
   }) : super(key: key);
 
@@ -24,6 +25,7 @@ class Many2OneField extends StatelessWidget {
   final String hint;
   final IconData icon;
   final List value;
+  final List fields;
   final Function onSelect;
   // final String subTitleField;
 
@@ -40,7 +42,7 @@ class Many2OneField extends StatelessWidget {
             hintText: hint),
       ),
       suggestionsCallback: (pattern) async {
-        return await BackendService.getMasterData(object,pattern);
+        return await BackendService.getMasterData(object,fields,pattern);
       },
       itemBuilder: (context, Map<String, String> master) {
         // var subtitle = master[subTitleField];

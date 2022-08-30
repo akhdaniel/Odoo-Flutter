@@ -34,7 +34,7 @@ class BackendService {
         .toList());
   }
   
-  static Future<List<Map<String, String>>> getMasterData(String object, String query) async {
+  static Future<List<Map<String, String>>> getMasterData(String object, List fields, String query) async {
     if (query.isEmpty && query.length < 3) {
       print('Query needs to be at least 3 chars');
       return Future.value([]);
@@ -54,15 +54,21 @@ class BackendService {
       'args': [],
       'kwargs': {
         'domain': domain,
-        'fields': ['id','name'],
+        'fields': fields,
       },
     });
 
-    List<Master> masters = List<Master>.from(response.map((model) => Master.fromJson(model)));
+    List<Master> masters = List<Master>.from(
+      response.map((model) => Master.fromJson(model))
+    );
 
-    return Future.value(masters
-        .map((e) => {'name': e.name, 'id': e.id.toString()})
-        .toList());
+    // print(masters);
+
+    return Future.value(masters.map((e) => {
+      'name': e.name, 
+      'price': e.price.toString(),
+      'city': e.city,
+      'id': e.id.toString()}).toList());
 
   }
 }
@@ -83,18 +89,25 @@ class Suggestion {
     );
   }
 }
+
 class Master {
   final int id;
   final String name;
+  final double price;
+  final String city;
 
   Master({
     required this.id,
     required this.name,
+    required this.city,
+    required this.price,
   });
 
   factory Master.fromJson(Map<String, dynamic> json) {
     return Master(
       name: json['name'],
+      price: json['list_price']??0,
+      city: json['city']??'',
       id: json['id'],
     );
   }
