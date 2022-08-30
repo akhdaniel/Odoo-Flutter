@@ -92,7 +92,10 @@ class Body extends StatelessWidget {
           'domain': [
             ['state', 'in', states]
           ],
-          // 'fields': ['id', 'name', '__last_update', 'amount_total'],
+          'fields': ['id', 'name', 'partner_id', 'state', 'currency_id', 'amount_total', '__last_update', 'amount_total'],
+          //partner = [id, name]
+          'limit':100,
+          'offset':0
         },
       });
       // print('\Order info: \n' + res.toString());
@@ -160,6 +163,8 @@ class Body extends StatelessWidget {
 
   Widget buildListItem(Map<String, dynamic> record) {
     var unique = record['__last_update'] as String;
+    // var partnerId = record["partner_id"][0]; ==> image == base64String (string) ==> convert image
+    // Future Builder => getPartner() , builder=> CircleAvatar(backgroundImage: Image.memory(base64Decode(base64String));),
     unique = unique.replaceAll(RegExp(r'[^0-9]'), '');
 
     // print(record.toString());

@@ -2,6 +2,7 @@ import 'dart:ffi';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 import 'package:odoo_rpc/odoo_rpc.dart';
 
 import '../../components/object_bottom_nav_bar.dart';
@@ -11,6 +12,7 @@ import '../../controllers.dart';
 import '../../shared_prefs.dart';
 import '../header.dart';
 final Controller c = Get.find();
+NumberFormat myFormat = NumberFormat.decimalPattern('en_us');
 
 
 class PartnerView extends StatelessWidget {
@@ -31,6 +33,9 @@ class PartnerView extends StatelessWidget {
       ),
       home: Scaffold(
         bottomNavigationBar: ObjectBottomNavBar(
+          showEdit: true,
+          showSave: true,
+          showConfirm: false,
           onConfirm: () => {},
           onSave: () => {},
           onEdit: () => {},
@@ -120,8 +125,117 @@ class Body extends StatelessWidget {
     }
   }
   
+  getTotalSaleOrder(context, partner_id) async {
+    final prefs = SharedPref();
+    final sobj = await prefs.readObject('session');
+    session = OdooSession.fromJson(sobj);
+    client = OdooClient(c.baseUrl.toString(), session);
+    try {
+      var so = await client?.callKw({
+        'model': 'sale.order',
+        'method': 'search_read',
+        'args': [],
+        'kwargs': {
+          'domain': [
+            ['partner_id', '=', partner_id]
+          ],
+          'fields':['amount_total'],
+        },
+      });
+      double total = 0;
+      for (var i = 0; i<so.length; i++){
+        total += so[i]['amount_total'];
+      }
+
+      return total;
+
+    } catch (e) { 
+      client?.close();
+      showDialog(context: context, builder: (context) {
+        return SimpleDialog(
+            children: <Widget>[
+                  Center(child: Text(e.toString()))
+            ]);
+      });
+    }
+  }
+  
+  getTotalPurchaseOrder(context, partner_id) async {
+    final prefs = SharedPref();
+    final sobj = await prefs.readObject('session');
+    session = OdooSession.fromJson(sobj);
+    client = OdooClient(c.baseUrl.toString(), session);
+    try {
+      var so = await client?.callKw({
+        'model': 'purchase.order',
+        'method': 'search_read',
+        'args': [],
+        'kwargs': {
+          'domain': [
+            ['partner_id', '=', partner_id]
+          ],
+          'fields':['amount_total'],
+        },
+      });
+
+      double total = 0;
+      for (var i = 0; i<so.length; i++){
+        total += so[i]['amount_total'];
+      }
+
+      return total;
+
+    } catch (e) { 
+      client?.close();
+      showDialog(context: context, builder: (context) {
+        return SimpleDialog(
+            children: <Widget>[
+                  Center(child: Text(e.toString()))
+            ]);
+      });
+    }
+  }
+    
+  getTotalVendorBill(context, partner_id) async {
+    final prefs = SharedPref();
+    final sobj = await prefs.readObject('session');
+    session = OdooSession.fromJson(sobj);
+    client = OdooClient(c.baseUrl.toString(), session);
+    try {
+      var so = await client?.callKw({
+        'model': 'account.invoice',
+        'method': 'search_read',
+        'args': [],
+        'kwargs': {
+          'domain': [
+            ['partner_id', '=', partner_id],
+            ['type','=','in_invoice']
+          ],
+          'fields':['residual'],
+        },
+      });
+
+      double total = 0;
+      for (var i = 0; i<so.length; i++){
+        total += so[i]['residual'];
+      }
+
+      return total;
+
+    } catch (e) { 
+      client?.close();
+      showDialog(context: context, builder: (context) {
+        return SimpleDialog(
+            children: <Widget>[
+                  Center(child: Text(e.toString()))
+            ]);
+      });
+    }
+  }
+  
   @override
   Widget build(BuildContext context) {
+
     // final top = coverHeight  - profileHight;
     return FutureBuilder(
       future: getPartner(context, id),
@@ -138,7 +252,15 @@ class Body extends StatelessWidget {
             cityCountry = cityCountry + (record['zip'] is String? ', ' +record['zip'] : '');
             
             var size = MediaQuery.of(context).size*0.5; //this gonna give us total height and with of our device
-            
+            // var totalSaleOrder = getTotalSaleOrder(context, record['id']);
+            // print('total=');
+            // print(totalSaleOrder);       
+
+            var totalInvoiceCount = record['invoice_ids'].length;
+            var customerInvoiceCount = totalInvoiceCount - record['supplier_invoice_count'];
+
+            print(record['receiving_count']);
+
             return Stack(
               
               clipBehavior: Clip.none,
@@ -183,12 +305,48 @@ class Body extends StatelessWidget {
                     padding: EdgeInsets.all(20),
                     crossAxisCount: 3,
                     children: [
-                      StatInfo(title:"SO", qty:9, amount:12000.0),
-                      StatInfo(title:"PO", qty:29, amount:140000),
-                      StatInfo(title:"DO", qty:49, amount:110000),
-                      StatInfo(title:"Receiving", qty:19, amount:220000),
-                      StatInfo(title:"Invoice", qty:12, amount:220000),
-                      StatInfo(title:"Bill", qty:14, amount:120000),
+                      StatInfo(
+                        title:"SO", 
+                        qty:record['sale_order_count'], 
+                        amount: FutureBuilder(
+                          future: getTotalSaleOrder(context, record['id']),
+                          builder: (BuildContext context, AsyncSnapshot snapshot) {
+                            return Text(record['currency_id'][1] + ' ' + myFormat.format(snapshot.data));
+                          },
+                        ),
+                      ),
+                      StatInfo(
+                        title:"PO", 
+                        qty:record['purchase_order_count'], 
+                        amount: FutureBuilder(
+                          future: getTotalPurchaseOrder(context, record['id']),
+                          builder: (BuildContext context, AsyncSnapshot snapshot) {
+                            return Text(record['currency_id'][1] + ' ' +snapshot.data.toString());
+                          },
+                        ),
+                      ),
+                      StatInfo(
+                        title:"DO", 
+                        qty: record['delivery_count'], 
+                        amount: Text( record['delivery_amount'].toString() + ' Units'  )),
+                      StatInfo(
+                        title:"Receiving", 
+                        qty:record['receiving_count'], 
+                        amount: Text( record['receiving_amount'].toString() + ' Units' )),
+                      StatInfo(
+                        title:"Invoice", 
+                        qty: customerInvoiceCount, 
+                        amount: Text( record['currency_id'][1] + ' ' + record['total_invoiced'].toString())
+                      ),
+                      StatInfo(
+                        title:"Bill", 
+                        qty:record['supplier_invoice_count'], 
+                        amount: FutureBuilder(
+                          future: getTotalVendorBill(context, record['id']),
+                          builder: (BuildContext context, AsyncSnapshot snapshot) {
+                            return Text(record['currency_id'][1] + ' ' +snapshot.data.toString());
+                          },
+                        ), ),
                     ],
                   ),
                 )
@@ -413,7 +571,7 @@ class StatInfo extends StatelessWidget {
 
   final String title;
   final int qty;
-  final double amount;
+  final Widget amount;
 
   @override
   Widget build(BuildContext context) {
@@ -426,8 +584,8 @@ class StatInfo extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Text(qty.toString(), style: TextStyle(fontWeight: FontWeight.bold),),
-          Text(amount.toString(), style: TextStyle(fontWeight: FontWeight.bold),),
+          Text("Count: $qty", style: TextStyle(fontWeight: FontWeight.bold),),
+          amount,
           Text(title, style: TextStyle(fontWeight: FontWeight.normal),),
         ],
       ),

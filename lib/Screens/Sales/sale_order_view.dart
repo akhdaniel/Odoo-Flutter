@@ -24,7 +24,7 @@ final TextEditingController _addNewPriceSubtotal = TextEditingController();
 
 OdooSession? session ;
 OdooClient? client ;
-SaleOrderModel saleOrder = SaleOrderModel(id: 0, name: '', partnerId: 0, paymentTermId: 0, orderDate: '', amountTotal: 0, state:'', orderLineIds: [], orderLines: []);
+SaleOrderModel saleOrder = SaleOrderModel(id: 0, name: '', partnerId: 0, paymentTermId: 0, orderDate: '', amountTotal: 0, state:'', orderLineIds: [], orderLines: [], lastUpdate:'');
 List<SaleOrderLineModel> saleOrderLines = [];
 SaleOrderLineModel currentSaleOrderLine = SaleOrderLineModel.newOrderLine();
 
@@ -48,6 +48,9 @@ class SaleOrderView extends StatelessWidget {
       ),
       home: Scaffold(
         bottomNavigationBar: ObjectBottomNavBar(
+          showEdit: true,
+          showConfirm: true,
+          showSave: true,
           onEdit: editSaleOrder,
           onSave: () { saveSaleOrder(context); }, 
           onConfirm: confirmSaleOrder,
@@ -200,7 +203,7 @@ class Body extends StatelessWidget {
     client = OdooClient(c.baseUrl.toString(), session);
 
     try {
-      return await client?.callKw({
+      var so = await client?.callKw({
         'model': 'sale.order',
         'method': 'search_read',
         'args': [],
@@ -211,6 +214,14 @@ class Body extends StatelessWidget {
           ],
         },
       });
+
+      var sol_ids = so[0]['order_line'];
+      var sol = await getOrderLines(context, sol_ids);
+
+      saleOrderLines = sol.map<SaleOrderLineModel>(
+        (e)=> SaleOrderLineModel.fromJson(e)).toList();
+      return so;
+
     } catch (e) { 
       client?.close();
       showDialog(context: context, builder: (context) {
@@ -223,6 +234,7 @@ class Body extends StatelessWidget {
   }
  
   getOrderLines(context, ids) async {
+    print(ids);
     final prefs = SharedPref();
     final sobj = await prefs.readObject('session');
     session = OdooSession.fromJson(sobj);
@@ -359,30 +371,39 @@ class Body extends StatelessWidget {
           height: size.height*0.5,
           child: Column(
             children: [
-              FutureBuilder(
-                future: getOrderLines(context, lines),
-                builder: (context, AsyncSnapshot<dynamic> snapshot) {
-                  if (snapshot.hasData) {
-                    if (snapshot.data!=null) {     
-                      saleOrderLines.clear();             
-                      return Expanded(
-                        child: ListView.builder(
-                          itemCount: snapshot.data.length,
-                          itemBuilder: (BuildContext context, int index) {
-                            final record = snapshot.data[index] as Map<String, dynamic>;
-                            saleOrderLines.add( SaleOrderLineModel.fromJson(record));
-                            return buildListItem(context, record);
-                          }),
-                      );
-                    } else {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-                  }
-                  else{
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                },
+
+              Expanded(
+                child: ListView.builder(
+                  itemCount: saleOrderLines.length,
+                  itemBuilder: (BuildContext context, int index){
+                    final record = saleOrderLines[index].toJson();
+                    return buildListItem(context, record);
+                  }),
               ),
+              // FutureBuilder(
+              //   future: getOrderLines(context, lines),
+              //   builder: (context, AsyncSnapshot<dynamic> snapshot) {
+              //     if (snapshot.hasData) {
+              //       if (snapshot.data!=null) {     
+              //         saleOrderLines.clear();             
+              //         return Expanded(
+              //           child: ListView.builder(
+              //             itemCount: snapshot.data.length,
+              //             itemBuilder: (BuildContext context, int index) {
+              //               final record = snapshot.data[index] as Map<String, dynamic>;
+              //               saleOrderLines.add( SaleOrderLineModel.fromJson(record));
+              //               return buildListItem(context, record);
+              //             }),
+              //         );
+              //       } else {
+              //         return const Center(child: CircularProgressIndicator());
+              //       }
+              //     }
+              //     else{
+              //       return const Center(child: CircularProgressIndicator());
+              //     }
+              //   },
+              // ),
             ],
           ),
         ),
@@ -526,7 +547,8 @@ class SaleOrderLineForm extends StatelessWidget {
                 )
               );
 
-              print(saleOrderLines);
+              print(saleOrderLines); 
+              Navigator.pop(context, true);
             }, 
             child: const Text("Ok")
           )

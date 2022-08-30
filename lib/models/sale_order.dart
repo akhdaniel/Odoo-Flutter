@@ -10,6 +10,7 @@ class SaleOrderModel {
     required this.state,
     required this.orderLineIds,
     required this.orderLines,
+    required this.lastUpdate,
   });
 
   int id;
@@ -21,6 +22,7 @@ class SaleOrderModel {
   double amountTotal;
   List orderLineIds;
   List orderLines;
+  String lastUpdate;
 
 
   static fromJson(record){
@@ -34,6 +36,7 @@ class SaleOrderModel {
       amountTotal: record['amount_total'],
       state: record['state'],
       orderLineIds: record['order_line'],
+      lastUpdate: record['__last_update'],
       orderLines: [],
     );
   }

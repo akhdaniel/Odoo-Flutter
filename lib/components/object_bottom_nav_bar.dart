@@ -13,11 +13,21 @@ class ObjectBottomNavBar extends GetView<Controller> {
     required this.onSave,
     required this.onEdit,
     required this.onConfirm,
+
+    required this.showConfirm,
+    required this.showEdit,
+    required this.showSave
+
   }) : super(key: key);
 
   final VoidCallback onSave;
   final VoidCallback onEdit;
   final VoidCallback onConfirm;
+
+  final bool showConfirm;
+  final bool showEdit;
+  final bool showSave;
+
 
   @override
   Widget build(BuildContext context) {
@@ -29,11 +39,14 @@ class ObjectBottomNavBar extends GetView<Controller> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: <Widget>[
-          BottomNavItem(
-            title: "Edit",
-            svgScr: "assets/icons/edit-svgrepo-com.svg",
-            isActive: false,
-            press: onEdit,
+          Visibility(
+            visible: showEdit,
+            child: BottomNavItem(
+              title: "Edit",
+              svgScr: "assets/icons/edit-svgrepo-com.svg",
+              isActive: false,
+              press: onEdit,
+            ),
           ),
           Obx(()=>BottomNavItem(
             isActive: false,
@@ -41,10 +54,13 @@ class ObjectBottomNavBar extends GetView<Controller> {
             svgScr: "assets/icons/save-svgrepo-com.svg",
             press: controller.isLoading.value?(){}:onSave,
           )),
-          BottomNavItem(
-            title: "Confirm",
-            svgScr: "assets/icons/check-svgrepo-com.svg",
-            press: onConfirm,
+          Visibility(
+            visible: showConfirm,
+            child: BottomNavItem(
+              title: "Confirm",
+              svgScr: "assets/icons/check-svgrepo-com.svg",
+              press: onConfirm,
+            ),
           ),
         ],
       ),
