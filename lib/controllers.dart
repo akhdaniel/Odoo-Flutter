@@ -13,6 +13,7 @@ class Controller extends GetxController{
 
   RxMap saleOrder = {}.obs;
   RxMap saleOrderLine = {}.obs;
+  RxList saleOrderLines = [].obs;
 
 
   setCurrentUser(username)=>currentUser(username);
@@ -35,6 +36,10 @@ class Controller extends GetxController{
 
   saveSaleOrderLine(sol){
     saleOrderLine(sol);
+  }
+
+  addSaleOrderLines(sol){
+    saleOrderLines.insert(0,sol);
   }
 
 }

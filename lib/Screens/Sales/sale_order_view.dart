@@ -16,16 +16,13 @@ final Controller c = Get.find();
 final TextEditingController _partnerIdController = TextEditingController();
 final TextEditingController _paymentTermIdController = TextEditingController();
 final TextEditingController _dateOrderController = TextEditingController();
-final TextEditingController _addNewProductController = TextEditingController();
-final TextEditingController _addNewUomController = TextEditingController();
-final TextEditingController _addNewQtyController = TextEditingController();
-final TextEditingController _addNewPriceUnit = TextEditingController();
-final TextEditingController _addNewPriceSubtotal = TextEditingController();
+
 
 OdooSession? session ;
 OdooClient? client ;
 SaleOrderModel saleOrder = SaleOrderModel(id: 0, name: '', partnerId: 0, paymentTermId: 0, orderDate: '', amountTotal: 0, state:'', orderLineIds: [], orderLines: [], lastUpdate:'');
-List<SaleOrderLineModel> saleOrderLines = [];
+// List saleOrderLines = [];
+var saleOrderLines = c.saleOrderLines.value;
 SaleOrderLineModel currentSaleOrderLine = SaleOrderLineModel.newOrderLine();
 
 
@@ -218,8 +215,7 @@ class Body extends StatelessWidget {
       var sol_ids = so[0]['order_line'];
       var sol = await getOrderLines(context, sol_ids);
 
-      saleOrderLines = sol.map<SaleOrderLineModel>(
-        (e)=> SaleOrderLineModel.fromJson(e)).toList();
+      c.saleOrderLines.value = sol.map((e)=> SaleOrderLineModel.fromJson(e)).toList();
       return so;
 
     } catch (e) { 
@@ -357,7 +353,7 @@ class Body extends StatelessWidget {
                     onPressed: () {
                       currentSaleOrderLine = SaleOrderLineModel.newOrderLine();
                       showDialog(context: context, builder: (context) {
-                        return const SaleOrderLineForm();
+                        return SaleOrderLineForm();
                       });
                     }, 
                     child: const Text("Add new item")
@@ -372,14 +368,14 @@ class Body extends StatelessWidget {
           child: Column(
             children: [
 
-              Expanded(
+              Obx(()=>Expanded(
                 child: ListView.builder(
-                  itemCount: saleOrderLines.length,
+                  itemCount: c.saleOrderLines.value.length,
                   itemBuilder: (BuildContext context, int index){
-                    final record = saleOrderLines[index].toJson();
+                    final record = c.saleOrderLines.value[index].toJson();
                     return buildListItem(context, record);
                   }),
-              ),
+              )),
               // FutureBuilder(
               //   future: getOrderLines(context, lines),
               //   builder: (context, AsyncSnapshot<dynamic> snapshot) {
@@ -443,10 +439,10 @@ class Body extends StatelessWidget {
       ),
       child: ListTile(
         onTap: ()  {
-          SaleOrderLineModel sol = SaleOrderLineModel.fromJson(record);
-          c.saveSaleOrderLine(sol.toJson());
+          currentSaleOrderLine = SaleOrderLineModel.fromJson(record);
+          // c.saveSaleOrderLine(sol.toJson());
           showDialog(context: context, builder: (context) {
-            return const SaleOrderLineForm();
+            return SaleOrderLineForm();
           });
         },
         leading: CircleAvatar(backgroundImage: NetworkImage(productUrl)),
@@ -466,10 +462,16 @@ class Body extends StatelessWidget {
 }
 
 class SaleOrderLineForm extends StatelessWidget {
-  const SaleOrderLineForm({
+  SaleOrderLineForm({
     Key? key,
   }) : super(key: key);
 
+  final TextEditingController _addNewProductController = TextEditingController();
+  final TextEditingController _addNewUomController = TextEditingController();
+  final TextEditingController _addNewQtyController = TextEditingController();
+  final TextEditingController _addNewPriceUnit = TextEditingController();
+  final TextEditingController _addNewPriceSubtotal = TextEditingController();
+  
   @override
   Widget build(BuildContext context) {
     // var value = c.saleOrderLine.value;
@@ -478,7 +480,7 @@ class SaleOrderLineForm extends StatelessWidget {
     _addNewQtyController.text = currentSaleOrderLine.qty.toString();
     _addNewPriceUnit.text = currentSaleOrderLine.priceUnit.toString();
     _addNewPriceSubtotal.text = currentSaleOrderLine.priceSubtotal.toString();
-    // print(sol);
+
     return SimpleDialog(
       contentPadding: const EdgeInsets.all(20),
       children: <Widget>[
@@ -534,20 +536,28 @@ class SaleOrderLineForm extends StatelessWidget {
           const SizedBox(height: 20),
           ElevatedButton(
             onPressed: (){
-              saleOrderLines.add(
-                SaleOrderLineModel(
-                  id: 0, 
-                  name: currentSaleOrderLine.name,
-                  productId: currentSaleOrderLine.productId, 
-                  saleOrderId: [saleOrder.id, saleOrder.name], 
-                  uomId: currentSaleOrderLine.uomId, 
-                  qty: currentSaleOrderLine.qty, 
-                  priceUnit: currentSaleOrderLine.priceUnit, 
-                  priceSubtotal: currentSaleOrderLine.priceSubtotal
-                )
-              );
+              if (currentSaleOrderLine.id!=0){
+                print('update: '+currentSaleOrderLine.id.toString());
+              }
+              else {
+                c.addSaleOrderLines(
+                  SaleOrderLineModel(
+                    id: 0, 
+                    name: currentSaleOrderLine.name,
+                    productId: currentSaleOrderLine.productId, 
+                    saleOrderId: [saleOrder.id, saleOrder.name], 
+                    uomId: currentSaleOrderLine.uomId, 
+                    currencyId: currentSaleOrderLine.currencyId, 
+                    qty: currentSaleOrderLine.qty, 
+                    priceUnit: currentSaleOrderLine.priceUnit, 
+                    priceSubtotal: currentSaleOrderLine.priceSubtotal,
+                    lastUpdate: currentSaleOrderLine.lastUpdate,
+                  )
+                );
+              }
 
-              print(saleOrderLines); 
+
+              // print(c.saleOrderLines.value.length); 
               Navigator.pop(context, true);
             }, 
             child: const Text("Ok")

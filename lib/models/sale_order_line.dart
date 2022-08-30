@@ -6,9 +6,11 @@ class SaleOrderLineModel {
     required this.productId,
     required this.saleOrderId,
     required this.uomId,
+    required this.currencyId,
     required this.qty,
     required this.priceUnit,
     required this.priceSubtotal,
+    required this.lastUpdate
   });
 
   int id;
@@ -16,9 +18,11 @@ class SaleOrderLineModel {
   List productId;
   List saleOrderId;
   List uomId;
+  List currencyId;
   double qty;
   double priceSubtotal;
   double priceUnit;
+  String lastUpdate;
 
   static newOrderLine(){
     return SaleOrderLineModel(
@@ -27,9 +31,11 @@ class SaleOrderLineModel {
       productId: [0,''], 
       saleOrderId: [0, ''], 
       uomId: [0,''], 
-      qty: 0.0, 
-      priceUnit: 0.0,
-      priceSubtotal: 0.0,
+      currencyId: [0,''], 
+      qty: 1.0, 
+      priceUnit: 1.0,
+      priceSubtotal: 1.0,
+      lastUpdate: '',
     );    
     // return {
     //   'id': 0, 
@@ -51,10 +57,12 @@ class SaleOrderLineModel {
       name: record['name'], 
       productId: record['product_id'], 
       saleOrderId: record['order_id'] , 
+      currencyId: record['currency_id'] , 
       uomId: record['product_uom'], 
       qty: record['product_uom_qty'], 
       priceUnit: record['price_unit'],
       priceSubtotal: record['price_subtotal'],
+      lastUpdate: record['__last_update'],
     );
   }
 
@@ -69,10 +77,12 @@ class SaleOrderLineModel {
       'name':name, 
       'product_id':productId, 
       'order_id':saleOrderId,
+      'currency_id':currencyId,
       'product_uom_qty':qty, 
       'price_unit': priceUnit, 
       'price_subtotal':priceSubtotal, 
       'product_uom':uomId, 
+      '__last_update':lastUpdate, 
     };
 
   }  
