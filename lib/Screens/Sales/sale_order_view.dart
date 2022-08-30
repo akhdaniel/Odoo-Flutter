@@ -354,7 +354,7 @@ class Body extends StatelessWidget {
                 ElevatedButton(
                     onPressed: () {
                       currentSaleOrderLine = SaleOrderLineModel.newOrderLine();
-                      currentSaleOrderLine.currencyId = [saleOrder.currencyId,''];
+                      currentSaleOrderLine.currencyId = saleOrder.currencyId;
                       showDialog(context: context, builder: (context) {
                         return SaleOrderLineForm();
                       });
