@@ -37,12 +37,13 @@ class SaleOrderScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     var size = MediaQuery.of(context).size*0.5; //this gonna give us total height and with of our device
     var state = Get.parameters['state'] ?? 'draft';
+    c.setEnableEditing(state == 'draft');
     var states = state=='draft'?['draft','sent']:['sale','done','cancel'];
 
     return Scaffold(
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          Get.toNamed('/saleOrderView/new');
+          Get.toNamed('/saleOrderView/0');
         },
         backgroundColor: kPrimaryColor,
         child: const Icon(Icons.add),
@@ -190,7 +191,7 @@ class Body extends StatelessWidget {
       ),
       child: ListTile(
         onTap: () {
-          Get.toNamed( '/saleOrderView/${record['name']}' );
+          Get.toNamed( '/saleOrderView/${record['id']}' );
         },
         leading: CircleAvatar(backgroundImage: NetworkImage(avatarUrl)),
         title: Text(record['name']),

@@ -6,7 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:odoo_rpc/odoo_rpc.dart';
 
 import '../../components/object_bottom_nav_bar.dart';
-import '../../components/top_right_menu.dart';
+// import '../../components/top_right_menu.dart';
 import '../../constants.dart';
 import '../../controllers.dart';
 import '../../shared_prefs.dart';

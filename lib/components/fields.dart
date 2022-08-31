@@ -16,6 +16,8 @@ class Many2OneField extends StatelessWidget {
     required this.icon,
     required this.onSelect,
     required this.fields,
+    required this.enableEditing,
+    // required this.domain,
     // required this.subTitleField,
   }) : super(key: key);
 
@@ -26,15 +28,16 @@ class Many2OneField extends StatelessWidget {
   final IconData icon;
   final List value;
   final List fields;
+  // final List domain;
   final Function onSelect;
   // final String subTitleField;
+  final bool enableEditing;
 
   @override
   Widget build(BuildContext context) {
     controller.text = (value.isNotEmpty) ? value[1] : '';
-    return TypeAheadField(
+    return enableEditing? TypeAheadField(
       textFieldConfiguration: TextFieldConfiguration(
-        // autofocus: true,
         controller: controller,
         decoration: InputDecoration(
             icon: Icon(icon),  
@@ -45,7 +48,6 @@ class Many2OneField extends StatelessWidget {
         return await BackendService.getMasterData(object,fields,pattern);
       },
       itemBuilder: (context, Map<String, String> master) {
-        // var subtitle = master[subTitleField];
         return ListTile(
           // leading: Icon(Icons.air_sharp),
           title: Text(master['name']!),
@@ -56,7 +58,13 @@ class Many2OneField extends StatelessWidget {
         // controller.text = "${master['name']}";
         onSelect(master);
       },
-    );
+    ) : TextFormField(
+        readOnly: true,
+        decoration: InputDecoration(
+          icon: Icon(icon),  
+          labelText: label,  
+          hintText: hint),
+        initialValue: value.isEmpty ? '' : value[1] );
   }
 }
 
@@ -93,25 +101,31 @@ class DateField extends StatelessWidget {
     required this.initialValue,
     required this.controller,
     required this.onSelect,
+    required this.enableEditing,
+
   }) : super(key: key);
 
   String initialValue;
+  bool enableEditing;
   TextEditingController controller;
   Function onSelect;
 
   @override
   Widget build(BuildContext context) {
-    controller.text = initialValue;
+    if (initialValue.isEmpty) {
+      initialValue = DateFormat('yyyy-MM-dd hh:mm:ss').format(DateTime.now()) ;
+    }
+    // controller.text = initialValue;
 
     return TextFormField(  
-      readOnly: true,
+      readOnly: !enableEditing ,
       controller: controller,
       decoration: const InputDecoration(  
         icon:  Icon(Icons.calendar_today),  
         hintText: 'Enter date order',  
         labelText: 'Order Date',  
       ),
-      onTap: () async {
+      onTap: !enableEditing ? null: () async {
         DateTime? pickedDate = await showDatePicker(
             context: context,
             initialDate: DateTime.parse(initialValue),

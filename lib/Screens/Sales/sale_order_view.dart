@@ -25,6 +25,76 @@ SaleOrderModel saleOrder = SaleOrderModel.newSaleOrder();
 var saleOrderLines = c.saleOrderLines.value;
 SaleOrderLineModel currentSaleOrderLine = SaleOrderLineModel.newOrderLine();
 
+getOrder(context, id) async {
+  final prefs = SharedPref();
+  final sobj = await prefs.readObject('session');
+  session = OdooSession.fromJson(sobj);
+  client = OdooClient(c.baseUrl.toString(), session);
+
+  try {
+    var so = await client?.callKw({
+      'model': 'sale.order',
+      'method': 'search_read',
+      'args': [],
+      'kwargs': {
+        // 'context': {'bin_size': true},
+        'domain': [
+          ['id', '=', int.parse(id)]
+        ],
+      },
+    });
+
+    var sol_ids = so[0]['order_line'];
+
+
+    //simpan object name ke state 
+    c.setObjectName(so[0]['name']);
+
+    // c.saleOrderLines.value.clear();
+    var sol = await getOrderLines(context, sol_ids);
+    c.saleOrderLines.value = sol.map((e)=> SaleOrderLineModel.fromJson(e)).toList();
+    return so;
+
+  } catch (e) { 
+    client?.close();
+    showDialog(context: context, builder: (context) {
+      return SimpleDialog(
+          children: <Widget>[
+                Center(child: Text(e.toString()))
+          ]);
+    });
+  }
+}
+
+getOrderLines(context, ids) async {
+  print(ids);
+  final prefs = SharedPref();
+  final sobj = await prefs.readObject('session');
+  session = OdooSession.fromJson(sobj);
+  client = OdooClient(c.baseUrl.toString(), session);
+  try {
+    return await client?.callKw({
+      'model': 'sale.order.line',
+      'method': 'search_read',
+      'args': [],
+      'kwargs': {
+        'domain': [
+          ['id', 'in', ids] //[2,3,4]
+        ],
+        'fields':['id','order_id','name','currency_id','product_id','product_uom_qty','product_uom','price_unit','price_subtotal','__last_update']
+      },
+    });
+  } catch (e) { 
+    client?.close();
+    showDialog(context: context, builder: (context) {
+      return SimpleDialog(
+        children: <Widget>[
+          Center(child: Text(e.toString()))
+        ]);
+    });
+  }
+}
+
 
 class SaleOrderView extends StatelessWidget {
   const SaleOrderView({Key? key}) : super(key: key);
@@ -33,7 +103,14 @@ class SaleOrderView extends StatelessWidget {
   Widget build(BuildContext context) {
     c.loading(false);
     var size = MediaQuery.of(context).size*0.5; //this gonna give us total height and with of our device
-    var name = Get.parameters['name'] ?? '0';
+    var id = Get.parameters['id'] ?? '0';
+
+
+    if (id=='0'){
+      c.setObjectName('New');
+      c.saveSaleOrder(SaleOrderModel.newSaleOrder().toJson());
+      c.saleOrderLines.value=[];
+    }
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
@@ -44,79 +121,135 @@ class SaleOrderView extends StatelessWidget {
         textTheme: Theme.of(context).textTheme.apply(displayColor: kTextColor),
       ),
       home: Scaffold(
-        bottomNavigationBar: ObjectBottomNavBar(
-          showEdit: true,
-          showConfirm: true,
-          showSave: true,
+        bottomNavigationBar: Obx(()=>ObjectBottomNavBar(
+          showEdit: c.enableEditing.value,
+          showConfirm: c.enableEditing.value,
+          showSave: c.enableEditing.value,
           onEdit: editSaleOrder,
           onSave: () { saveSaleOrder(context); }, 
           onConfirm: confirmSaleOrder,
-        ),
+        )),
         body:  Stack(
           children: <Widget>[
             Header(size: size),
             c.isLoading.isTrue ? Center(child: CircularProgressIndicator()) : 
-              Body(title: "Sale Order", name: name)
+              Body(title: "Sale Order", id: id)
           ],
         ),
       ),
     );
   }
 
-  saveSaleOrder(context) async {
+  saveSaleOrder(context)  {
+    Widget okButton = ElevatedButton(
+        child: Text("OK"),
+        onPressed: () async { 
+          Navigator.pop(context, true);
 
-    Iterable<List<Object>> orderLinesOrm = saleOrderLines.map((e) => [0,0,{
-      'product_id':e.productId[0],
-      'product_uom': e.uomId[0],
-      'product_uom_qty':e.qty,
-      'price_unit':e.priceUnit,
-      'price_subtotal':e.priceSubtotal,
-      }]);
+          
+          Iterable<List<Object>> orderLinesOrm = c.saleOrderLines.value.map((e) { 
+            var command = e.id == 0 ? 0 : 1 ;
+            var id = e.id;
+            return [command, id , {
+              'product_id':e.productId[0],
+              'product_uom': e.uomId[0],
+              'product_uom_qty':e.qty,
+              'price_unit':e.priceUnit,
+              'price_subtotal':e.priceSubtotal,
+              }];
+            });
 
-    final prefs = SharedPref();
-    final sobj = await prefs.readObject('session');
-    session = OdooSession.fromJson(sobj);
-    client = OdooClient(c.baseUrl.toString(), session);
-    
-    c.isLoading.value = true;
+            final prefs = SharedPref();
+            final sobj = await prefs.readObject('session');
+            session = OdooSession.fromJson(sobj);
+            client = OdooClient(c.baseUrl.toString(), session);
+            
+            c.isLoading.value = true;
 
-    try {      
-      var response = await client?.callKw({
-        'model': 'sale.order',
-        'method': 'write',
-        'args': [
-          [saleOrder.id],
-          {
-            'name': saleOrder.name,
-            'date_order': saleOrder.orderDate,
-            'partner_id': saleOrder.partnerId,
-            'payment_term_id': saleOrder.paymentTermId,
-            'order_line': orderLinesOrm.toList(),//o2m fields
-          }
-        ],
-        'kwargs': {},
-      });
+            // print(orderLinesOrm.toList());
+            // print(saleOrder.id);
 
-      if(response!=null) {
-        c.loading(false) ;
-        showDialog(context: context, builder: (context) {
-          return const SimpleDialog(
-              children: <Widget>[
-                    Center(child: Text("Successfull save"))
-              ]);
-        });
-      }
-    } catch (e) { 
-      client?.close();
-      c.loading(false) ;
-      showDialog(context: context, builder: (context) {
-        return SimpleDialog(
-            children: <Widget>[
-                  Center(child: Text("Error on save ${e.toString()}"))
-            ]);
-      });
-    }
+            try {      
+              var response;
+
+              if(saleOrder.id==0){
+                response = await client?.callKw({
+                  'model': 'sale.order',
+                  'method': 'create',
+                  'args': [
+                    {
+                      'date_order': saleOrder.orderDate,
+                      'partner_id': saleOrder.partnerId[0],
+                      'payment_term_id': saleOrder.paymentTermId[0],
+                      'order_line': orderLinesOrm.toList(),//o2m fields
+                    }
+                  ],
+                  'kwargs': {},
+                });
+
+                saleOrder.id= response;
+              }
+              else{
+                response = await client?.callKw({
+                  'model': 'sale.order',
+                  'method': 'write',
+                  'args': [
+                    [saleOrder.id],
+                    {
+                      // 'name': saleOrder.name,
+                      'date_order': saleOrder.orderDate,
+                      'partner_id': saleOrder.partnerId[0],
+                      'payment_term_id': saleOrder.paymentTermId[0],
+                      'order_line': orderLinesOrm.toList(),//o2m fields
+                    }
+                  ],
+                  'kwargs': {},
+                });
+              }
+              if(response!=null) {
+                c.loading(false) ;
+                var so = await getOrder(context, saleOrder.id.toString());
+                var sol_ids = so[0]['order_line'];
+                var sol = await getOrderLines(context, sol_ids);
+                c.saleOrderLines.value = sol.map((e)=> SaleOrderLineModel.fromJson(e)).toList();
+
+                showDialog(context: context, builder: (context) {
+                  return const SimpleDialog(
+                      children: <Widget>[
+                            Center(child: Text("Successfull save"))
+                      ]);
+                });
+              }
+            } catch (e) { 
+              client?.close();
+              c.loading(false) ;
+              showDialog(context: context, builder: (context) {
+                return SimpleDialog(
+                    children: <Widget>[
+                          Center(child: Text("Error on save ${e.toString()}"))
+                    ]);
+              });
+            }          
+        },
+      );    
+
+    AlertDialog alert = AlertDialog(
+      title: Text("Confirm save?"),
+      content: Text("confirm save?."),
+      actions: [
+        okButton,
+      ],
+    );
+
+    // confirm 
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return alert;
+      },
+    );
   }
+
 
   void editSaleOrder(){
     print('edit');
@@ -127,21 +260,19 @@ class SaleOrderView extends StatelessWidget {
     print('confirm');
     print(c.saleOrder);
   }
-
-
 }
 
 class Body extends StatelessWidget {
   Body({
     Key? key,
     required this.title,
-    required this.name,
+    required this.id,
   }) : super(key: key);
   final _formKey = GlobalKey<FormState>();  
 
   final String? title;
   String? subtitle ;
-  final String? name;
+  final String id;
 
   @override
   Widget build(BuildContext context) {
@@ -156,20 +287,21 @@ class Body extends StatelessWidget {
               title??'',
               style:TextStyle(fontSize: 25, fontWeight: FontWeight.w100, color: Colors.white),
             ),
-            Text(
-              name.toString(),
+            Obx(()=>Text(
+              c.objectName.value,
               style:TextStyle(fontSize: 25, fontWeight: FontWeight.w900, color: Colors.white),
-            ),
+            )),
             
-            name=='new'? 
+            id=='0'? 
             buildForm(context, 
               {'state':'draft','name':'','partner_id':[0,''],'date_order':'','payment_term_id':[0,''],'currency_id':[0,'']}
             ) : 
             FutureBuilder(
-              future: getOrder(context, name),
+              future: getOrder(context, id),
               builder: (context, AsyncSnapshot<dynamic>  orderSnapshot) {
                 if (orderSnapshot.hasData) {
                   if (orderSnapshot.data!=null) {
+
                     return Expanded(
                       child: ListView.builder(
                         itemCount: orderSnapshot.data.length,
@@ -193,75 +325,13 @@ class Body extends StatelessWidget {
     ));
   }
 
-  getOrder(context, name) async {
-    final prefs = SharedPref();
-    final sobj = await prefs.readObject('session');
-    session = OdooSession.fromJson(sobj);
-    client = OdooClient(c.baseUrl.toString(), session);
-
-    try {
-      var so = await client?.callKw({
-        'model': 'sale.order',
-        'method': 'search_read',
-        'args': [],
-        'kwargs': {
-          // 'context': {'bin_size': true},
-          'domain': [
-            ['name', '=', name]
-          ],
-        },
-      });
-
-      var sol_ids = so[0]['order_line'];
-      var sol = await getOrderLines(context, sol_ids);
-
-      c.saleOrderLines.value = sol.map((e)=> SaleOrderLineModel.fromJson(e)).toList();
-      return so;
-
-    } catch (e) { 
-      client?.close();
-      showDialog(context: context, builder: (context) {
-        return SimpleDialog(
-            children: <Widget>[
-                  Center(child: Text(e.toString()))
-            ]);
-      });
-    }
-  }
- 
-  getOrderLines(context, ids) async {
-    print(ids);
-    final prefs = SharedPref();
-    final sobj = await prefs.readObject('session');
-    session = OdooSession.fromJson(sobj);
-    client = OdooClient(c.baseUrl.toString(), session);
-    try {
-      return await client?.callKw({
-        'model': 'sale.order.line',
-        'method': 'search_read',
-        'args': [],
-        'kwargs': {
-          'domain': [
-            ['id', 'in', ids] //[2,3,4]
-          ],
-          'fields':['id','order_id','name','currency_id','product_id','product_uom_qty','product_uom','price_unit','price_subtotal','__last_update']
-        },
-      });
-    } catch (e) { 
-      client?.close();
-      showDialog(context: context, builder: (context) {
-        return SimpleDialog(
-          children: <Widget>[
-            Center(child: Text(e.toString()))
-          ]);
-      });
-    }
-  }
-
   buildForm(context, record){
-    var lines = record['order_line'];//[3,4,5,6]
+    // var lines = record['order_line'];//[3,4,5,6]
     var stateColor = getStateColor(record);
     var size = MediaQuery.of(context).size;
+
+    var state = record['state'];
+    var enableEditing = state == 'draft';
 
     return Column(
       children: [
@@ -296,15 +366,17 @@ class Body extends StatelessWidget {
                           fields: ['id','name','city'],
                           icon: Icons.person,
                           controller: _partnerIdController,
+                          enableEditing: enableEditing,
                           onSelect: (master) {
                             saleOrder.partnerId = [int.parse(master['id']), master['name']];
                             _partnerIdController.text = master['name'];
-                            },
+                          },
                         ),
                        
                         DateField(
                           initialValue: record['date_order'],
                           controller: _dateOrderController,
+                          enableEditing: enableEditing,
                           onSelect: (date) {
                             saleOrder.orderDate = date;
                             // print(saleOrder.toString());
@@ -319,6 +391,7 @@ class Body extends StatelessWidget {
                           fields: ['id','name'],
                           icon: Icons.abc,
                           controller: _paymentTermIdController,
+                          enableEditing: enableEditing,
                           onSelect: (master) {
                             saleOrder.paymentTermId = [int.parse(master['id']), master['name']];
                             _paymentTermIdController.text = master['name'];
@@ -351,7 +424,9 @@ class Body extends StatelessWidget {
                   "Order Lines", 
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.w300),
                 ),
-                ElevatedButton(
+                Visibility(
+                  visible: enableEditing,
+                  child: ElevatedButton(
                     onPressed: () {
                       currentSaleOrderLine = SaleOrderLineModel.newOrderLine();
                       currentSaleOrderLine.currencyId = saleOrder.currencyId;
@@ -360,7 +435,8 @@ class Body extends StatelessWidget {
                       });
                     }, 
                     child: const Text("Add new item")
-                  )
+                  ),
+                )
               ],
             ),
           ),
@@ -443,13 +519,17 @@ class Body extends StatelessWidget {
       child: ListTile(
         onTap: ()  {
           currentSaleOrderLine = SaleOrderLineModel.fromJson(record);
+          print(currentSaleOrderLine.id);
           // c.saveSaleOrderLine(sol.toJson());
           showDialog(context: context, builder: (context) {
             return SaleOrderLineForm();
           });
         },
         leading: CircleAvatar(backgroundImage: NetworkImage(productUrl)),
-        title: Text(record['name']),
+        title: Text(record['name'],
+          overflow: TextOverflow.ellipsis,
+          maxLines: 2,
+        ),
         subtitle: Text(
           "${record['product_id'][1]}", 
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
@@ -477,9 +557,7 @@ class SaleOrderLineForm extends StatelessWidget {
   
   @override
   Widget build(BuildContext context) {
-    // var value = c.saleOrderLine.value;
-    // SaleOrderLineModel sol = SaleOrderLineModel.fromJson(value);
-    
+
     _addNewQtyController.text = currentSaleOrderLine.qty.toString();
     _addNewPriceUnit.text = currentSaleOrderLine.priceUnit.toString();
     _addNewPriceSubtotal.text = currentSaleOrderLine.priceSubtotal.toString();
@@ -494,12 +572,14 @@ class SaleOrderLineForm extends StatelessWidget {
             hint: 'select product', 
             label: 'Product', 
             icon: Icons.add_box, 
-            fields: ['id','name','list_price'],
+            fields: ['id','name','list_price', 'uom_id'],
+            enableEditing: true,
+            // domain: [['sale','=',true]],
             onSelect: (master){
               _addNewProductController.text = master['name'];
               _addNewPriceUnit.text = master['price'];
 
-              currentSaleOrderLine.productId = [master['id'], master['name']];
+              currentSaleOrderLine.productId = [ int.parse(master['id']), master['name']];
               currentSaleOrderLine.name = master['name'];
               currentSaleOrderLine.priceUnit = double.parse(master['price']);
               currentSaleOrderLine.priceSubtotal = currentSaleOrderLine.priceUnit * currentSaleOrderLine.qty ;
@@ -508,6 +588,12 @@ class SaleOrderLineForm extends StatelessWidget {
             }
           ),
           TextField(
+            onChanged: (val){
+              print(val);
+              currentSaleOrderLine.qty = val!=''?double.parse(val):0;
+              currentSaleOrderLine.priceSubtotal = currentSaleOrderLine.priceUnit * currentSaleOrderLine.qty ;
+              _addNewPriceSubtotal.text = currentSaleOrderLine.priceSubtotal.toString();
+            },
             controller: _addNewQtyController,
             decoration: const InputDecoration(  
               icon:  Icon(Icons.abc),  
@@ -523,9 +609,10 @@ class SaleOrderLineForm extends StatelessWidget {
             label: 'UoM', 
             fields: ['id','name'],
             icon: Icons.add_box, 
+            enableEditing: true,
             onSelect: (master){
               _addNewUomController.text = master['name'];
-              currentSaleOrderLine.uomId = [master['id'], master['name']];
+              currentSaleOrderLine.uomId = [ int.parse(master['id']), master['name']];
             }
           ),
           TextField(
@@ -548,7 +635,12 @@ class SaleOrderLineForm extends StatelessWidget {
           ElevatedButton(
             onPressed: (){
               if (currentSaleOrderLine.id!=0){
-                print('update: '+currentSaleOrderLine.id.toString());
+                // print(currentSaleOrderLine);
+                //update list value by id
+                var sol = c.saleOrderLines.value;
+                int index = sol.indexWhere((e) => e.id==currentSaleOrderLine.id);
+                c.updateSaleOrderLines(index,currentSaleOrderLine);
+
               }
               else {
                 c.addSaleOrderLines(

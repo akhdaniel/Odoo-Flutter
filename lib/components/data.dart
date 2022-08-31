@@ -10,7 +10,7 @@ import '../shared_prefs.dart';
 final Controller c = Get.find();
 
 class BackendService {
-  static Future<List<Map<String, String>>> getSuggestions(String query) async {
+  static Future<List<Map<String,dynamic>>> getSuggestions(String query) async {
     if (query.isEmpty && query.length < 3) {
       print('Query needs to be at least 3 chars');
       return Future.value([]);
@@ -46,14 +46,14 @@ class BackendService {
     final sobj = await prefs.readObject('session');
     session = OdooSession.fromJson(sobj);
     client = OdooClient(c.baseUrl.toString(), session);
-    var domain = [['name','ilike',query]];
+    var domain = ['name','ilike',query] ;
     
     var response = await client.callKw({
       'model': object,
       'method': 'search_read',
       'args': [],
       'kwargs': {
-        'domain': domain,
+        'domain': [domain],
         'fields': fields,
       },
     });
@@ -62,12 +62,11 @@ class BackendService {
       response.map((model) => Master.fromJson(model))
     );
 
-    // print(masters);
 
     return Future.value(masters.map((e) => {
       'name': e.name, 
-      'price': e.price.toString(),
-      'city': e.city,
+      'price': e.price != false ? e.price.toString() : '0',
+      'city': e.city != false ? e.city.toString() : '-',
       'id': e.id.toString()}).toList());
 
   }
@@ -106,8 +105,8 @@ class Master {
   factory Master.fromJson(Map<String, dynamic> json) {
     return Master(
       name: json['name'],
-      price: json['list_price']??0,
-      city: json['city']??'',
+      price: json['list_price']==false || json['list_price'] == null ?0:json['list_price'],
+      city: json['city']==false||json['city']==null?'':json['city'],
       id: json['id'],
     );
   }

@@ -48,12 +48,17 @@ class ObjectBottomNavBar extends GetView<Controller> {
               press: onEdit,
             ),
           ),
-          Obx(()=>BottomNavItem(
-            isActive: false,
-            title: controller.isLoading.value?"Uploading...":"Save",
-            svgScr: "assets/icons/save-svgrepo-com.svg",
-            press: controller.isLoading.value?(){}:onSave,
-          )),
+          // Obx(()=>
+          Visibility(
+            visible: showSave,
+            child: BottomNavItem(
+              isActive: false,
+              title: controller.isLoading.value?"Uploading...":"Save",
+              svgScr: "assets/icons/save-svgrepo-com.svg",
+              press: controller.isLoading.value?(){}:onSave,
+            ),
+          ),
+          // ),
           Visibility(
             visible: showConfirm,
             child: BottomNavItem(

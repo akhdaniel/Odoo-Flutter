@@ -62,7 +62,7 @@ class MyApp extends StatelessWidget {
         GetPage(name: '/inventoryHome', page: () => const InventoryHome()),
         GetPage(name: '/purchaseOrder/:state', page: () => const PurchaseOrder()),
         GetPage(name: '/saleOrder/:state', page: () => const SaleOrder()),
-        GetPage(name: '/saleOrderView/:name', page: () => const SaleOrderView()),
+        GetPage(name: '/saleOrderView/:id', page: () => const SaleOrderView()),
         GetPage(name: '/partner/:type', page: () => const Partner()),
         GetPage(name: '/partnerView/:id', page: () => const PartnerView()),
         GetPage(name: '/picking/:type', page: () => const Picking()),

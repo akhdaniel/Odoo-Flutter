@@ -1,4 +1,5 @@
 
+import 'package:flutter_auth/models/sale_order_line.dart';
 import 'package:get/get.dart';
 
 class Controller extends GetxController{
@@ -11,10 +12,16 @@ class Controller extends GetxController{
 
   var showAddNew = false.obs;
 
+
+  var enableEditing = false.obs;
+
+  setEnableEditing(val){
+    enableEditing(val);
+  }
+
   RxMap saleOrder = {}.obs;
   RxMap saleOrderLine = {}.obs;
-  RxList saleOrderLines = [].obs;
-
+  RxList saleOrderLines = [].obs; // reactive
 
   setCurrentUser(username)=>currentUser(username);
   setDb(newDb)=>db(newDb);
@@ -40,6 +47,10 @@ class Controller extends GetxController{
 
   addSaleOrderLines(sol){
     saleOrderLines.insert(0,sol);
+  }
+
+  void updateSaleOrderLines(int index, SaleOrderLineModel currentSaleOrderLine) {
+    saleOrderLines[index] = currentSaleOrderLine;
   }
 
 }

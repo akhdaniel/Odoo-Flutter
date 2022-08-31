@@ -34,7 +34,7 @@ class SaleOrderModel {
       name: record['name'], 
       partnerId: record['partner_id'] , 
       currencyId: record['currency_id'], 
-      paymentTermId: record['payment_term_id'], 
+      paymentTermId: record['payment_term_id'] is List ? record['payment_term_id'] : [], 
       orderDate: record['date_order'], 
       amountTotal: record['amount_total'],
       state: record['state'],
