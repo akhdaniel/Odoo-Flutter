@@ -443,7 +443,7 @@ class Body extends StatelessWidget {
         ),
         
         SizedBox(
-          height: size.height*0.5,
+          height: size.height*0.4,
           child: Column(
             children: [
 
