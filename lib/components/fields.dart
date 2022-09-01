@@ -36,7 +36,13 @@ class Many2OneField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     controller.text = (value.isNotEmpty) ? value[1] : '';
-    return enableEditing? TypeAheadField(
+    return enableEditing? TypeAheadFormField(
+      validator: (value) {
+        if (value!.isEmpty) {
+          return 'Please enter some text';
+        }
+        return null;
+      },
       textFieldConfiguration: TextFieldConfiguration(
         controller: controller,
         decoration: InputDecoration(
