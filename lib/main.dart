@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_auth/Screens/Sales/sale_home.dart';
+import 'package:flutter_auth/Screens/Sales/sale_order.dart';
 import 'package:flutter_auth/Screens/Welcome/welcome_screen.dart';
 import 'package:flutter_auth/constants.dart';
+import 'package:get/get.dart';
+import 'Screens/Home/home.dart';
+import 'components/controllers.dart';
 
 void main() => runApp(const MyApp());
 
@@ -10,7 +15,8 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    final Controller c = Get.put(Controller());
+    return GetMaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Flutter Auth',
       theme: ThemeData(
@@ -38,6 +44,11 @@ class MyApp extends StatelessWidget {
             ),
           )),
       home: const WelcomeScreen(),
+      getPages: [
+        GetPage(name: '/home', page: () => Home()),
+        GetPage(name: '/salesHome', page: () => SalesHome()),
+        GetPage(name: '/saleOrder/:state', page: () => SaleOrder()),
+      ]
     );
   }
 }
